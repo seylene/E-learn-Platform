@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Registrar Dashboard</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">
+    <img src="images/logo.png" class="logo-img">
+    <small>Digital Academic Operating System</small>
+  </div>
+  <div class="user-info">
+    Registrar | Ms. Ana Cruz
+    <button class="logout-btn" onclick="logout()">Logout</button>
+  </div>
+</div>
+
+<div class="container">
+  <div class="sidebar">
+  <h4>REGISTRAR</h4>
+    <a href="registrar_profile.html">My Profile</a>
+    <a href="registrar_dashboard.html" class="active">Dashboard</a>
+    <a href="registrar_students.html">Student Records</a>
+    <a href="registrar_faculty.html">Faculty Records</a>
+    <a href="registrar_grades.html">Grade Evaluation</a>
+    <h4 style="margin-top:16px;font-size:10px;letter-spacing:1px;opacity:.7;">MANAGEMENT</h4>
+    <a href="registrar_college.html">Colleges</a>
+    <a href="registrar_course.html">Courses</a>
+    <a href="registrar_subject.html">Subjects</a>
+    <a href="registrar_yearlevel.html">Year Levels</a>
+    <a href="registrar_semester.html">Semesters</a>
+    <a href="registrar_section.html">Sections</a>
+    <a href="registrar_academic.html">Academic Year</a>
+    <h4 style="margin-top:16px;font-size:10px;letter-spacing:1px;opacity:.7;">RECORDS</h4>
+    <a href="registrar_parents.html">Parents</a>
+    <a href="registrar_employees.html">Employees</a>
+    <a href="registrar_admission.html">Admission</a>
+    <h4 style="margin-top:16px;font-size:10px;letter-spacing:1px;opacity:.7;">OTHERS</h4>
+    <a href="registrar_reports.html">Reports</a>
+    <a href="registrar_logs.html">User Logs</a>
+    <a href="registrar_roles.html">Roles & Permissions</a>
+  </div>
+
+  <div class="content">
+    <h2>Registrar Dashboard</h2>
+    <p class="subtitle">Student Enrollment Overview</p>
+
+    <!-- SUMMARY CARDS -->
+    <div class="cards">
+      <div class="card">
+        <h3>👤 Total Students</h3>
+        <p class="count" id="totalStudents">0</p>
+      </div>
+      <div class="card">
+        <h3>📚 Total Subjects</h3>
+        <p class="count" id="totalSubjects">0</p>
+      </div>
+      <div class="card">
+        <h3>👨‍🏫 Total Faculty</h3>
+        <p class="count" id="totalFaculty">0</p>
+      </div>
+    </div>
+
+    <!-- RECENT ENROLLMENTS TABLE -->
+    <div class="table-section" style="margin-top:24px;">
+      <h3>Recent Enrollments</h3>
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Student ID</th>
+            <th>Full Name</th>
+            <th>Course</th>
+            <th>Year</th>
+            <th>Subjects</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="studentsTable"></tbody>
+      </table>
+      <div class="last-updated" id="lastUpdated"></div>
+    </div>
+
+    <!-- COURSE BREAKDOWN + FACULTY LOAD -->
+    <div class="two-col">
+      <div class="table-section">
+        <h3>Enrollment by Course</h3>
+        <div id="courseBreakdown"><div class="empty-note">No data yet.</div></div>
+      </div>
+      <div class="table-section">
+        <h3>Faculty Load Overview</h3>
+        <div id="facultyLoad"><div class="empty-note">No faculty added yet.</div></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- VIEW MODAL -->
+<div id="viewModal" class="modal">
+  <div class="modal-content view-modal">
+    <h3>Student Record</h3>
+    <div id="viewContent"></div>
+    <button class="danger" onclick="closeModal()" style="margin-top:14px;">Close</button>
+  </div>
+</div>
+
+<script>
+function logout() { window.location.href = "login.html"; }
+
+/* ===== LOAD DASHBOARD ===== */
+function loadDashboard() {
+  const students = JSON.parse(localStorage.getItem("students")) || [];
+  const faculty  = JSON.parse(localStorage.getItem("faculty"))  || [];
+  const enrolled = students.filter(s => s.enrolled);
+
+  // ── Summary cards ──
+  document.getElementById("totalStudents").textContent = enrolled.length;
+  document.getElementById("totalSubjects").textContent =
+    enrolled.reduce((a, s) => a + (s.subjects || []).length, 0);
+  document.getElementById("totalFaculty").textContent  = faculty.length;
+
+
+
+  // ── Recent enrollments (last 5) ──
+  const tbody  = document.getElementById("studentsTable");
+  const recent = [...enrolled].reverse().slice(0, 5);
+  if (!recent.length) {
+    tbody.innerHTML = `<tr><td colspan="6" class="empty-note">No students enrolled yet. <a href="registrar_students.html" style="color:#2f4cff;font-weight:600;">Go to Student Records →</a></td></tr>`;
+  } else {
+    tbody.innerHTML = recent.map(s => {
+      const realIdx = students.indexOf(s);
+      const names   = (s.subjects || []).map(sb => sb.name).filter(Boolean);
+      const preview = names.length
+        ? names.slice(0, 2).join(", ") + (names.length > 2 ? ` +${names.length - 2} more` : "")
+        : "—";
+      return `<tr>
+        <td>${s.studentId}</td>
+        <td>${s.fullName}</td>
+        <td>${s.course}</td>
+        <td>${s.yearLevel || 1}${yrSfx(s.yearLevel || 1)} Year</td>
+        <td style="font-size:12px;">${names.length} subject(s)<br><span style="color:#6b7280;">${preview}</span></td>
+        <td><button onclick="viewStudent(${realIdx})">View</button></td>
+      </tr>`;
+    }).join("");
+  }
+
+  // ── Course breakdown ──
+  const cc = {};
+  enrolled.forEach(s => { cc[s.course] = (cc[s.course] || 0) + 1; });
+  const cEl = document.getElementById("courseBreakdown");
+  const cEntries = Object.entries(cc).sort((a, b) => b[1] - a[1]);
+  cEl.innerHTML = cEntries.length
+    ? cEntries.map(([c, n]) =>
+        `<div class="breakdown-row">
+          <span>${c}</span>
+          <span class="count-badge">${n} student${n !== 1 ? "s" : ""}</span>
+        </div>`).join("")
+    : `<div class="empty-note">No data yet.</div>`;
+
+  // ── Faculty load overview ──
+  const fEl = document.getElementById("facultyLoad");
+  if (!faculty.length) {
+    fEl.innerHTML = `<div class="empty-note">No faculty added yet.</div>`;
+  } else {
+    fEl.innerHTML = faculty.map(f => {
+      const units   = (f.schedules || []).reduce((a, sc) => a + (parseInt(sc.units) || 0), 0);
+      const max     = parseInt(f.maxLoad) || 0;
+      const over    = max > 0 && units > max;
+      const pct     = max > 0 ? Math.min((units / max) * 100, 100) : 0;
+      return `
+        <div class="fac-load-row">
+          <div class="fac-name">${f.name}<br><span style="font-size:11px;color:#6b7280;font-weight:400;">${f.department||"—"}</span></div>
+          <div class="mini-bar"><div class="mini-bar-fill ${over?"over":""}" style="width:${pct}%"></div></div>
+          <span class="fac-units" style="color:${over?"#ef4444":"#6b7280"};">${units}/${max||"?"}u</span>
+          ${over ? `<span class="over-tag">⚠️ Over</span>` : ""}
+        </div>`;
+    }).join("");
+  }
+
+  // ── Last updated ──
+  const dash = JSON.parse(localStorage.getItem("dashboardData") || "{}");
+  document.getElementById("lastUpdated").textContent =
+    dash.lastUpdated ? "Last updated: " + new Date(dash.lastUpdated).toLocaleString() : "";
+}
+
+/* ===== VIEW STUDENT ===== */
+function viewStudent(index) {
+  const students = JSON.parse(localStorage.getItem("students")) || [];
+  const s = students[index];
+  if (!s) return;
+
+  const subjHtml = (s.subjects || []).length
+    ? s.subjects.map(sb => {
+        const allDays = [...(sb.days || []), ...(sb.customDays || [])];
+        return `
+          <div class="subj-view-card">
+            <div class="subj-view-top">
+              <span class="subj-view-name">${sb.name || "—"}</span>
+              ${sb.code ? `<span class="subj-view-code">${sb.code}</span>` : ""}
+            </div>
+            <div class="subj-detail-grid">
+              <div><span class="dl">Faculty</span><span class="dv">${sb.faculty || "—"}</span></div>
+              <div><span class="dl">Units</span><span class="dv">${sb.units || "—"}</span></div>
+              <div><span class="dl">Time</span><span class="dv">${sb.time || "—"}</span></div>
+              <div style="grid-column:1/-1"><span class="dl">Pre-Requisite</span><span class="dv">${sb.prereq || "None"}</span></div>
+              <div style="grid-column:1/-1"><span class="dl">Days</span>
+                ${allDays.length
+                  ? `<div class="day-chips">${allDays.map(d => `<span class="day-chip">${d}</span>`).join("")}</div>`
+                  : `<span class="dv" style="color:#9ca3af;">No days set</span>`}
+              </div>
+            </div>
+          </div>`;
+      }).join("")
+    : `<div class="empty-note">No subjects enrolled.</div>`;
+
+  const reqDefs = { form137:"Form 137", goodMoral:"Good Moral", birth:"Birth Certificate", picture:"2x2 ID Picture", medical:"Medical Certificate" };
+  const reqHtml = Object.entries(reqDefs).map(([key, label]) => {
+    const done = s.requirements && s.requirements[key];
+    return `<div class="req-view-item ${done ? "done" : "pending"}">
+      <div class="req-dot ${done ? "done" : "pending"}"></div>
+      <span>${label}</span>
+      <span style="margin-left:auto;font-size:11px;font-weight:700;color:${done?"#16a34a":"#dc2626"};">${done?"Submitted":"Pending"}</span>
+    </div>`;
+  }).join("");
+
+  const pracHtml = s.practicum && s.practicum.enabled ? `
+    <div class="view-section">
+      <div class="view-section-title">Practicum / OJT</div>
+      <div class="prac-view">
+        <div class="prac-view-title">Practicum Details</div>
+        <div class="info-grid">
+          <div class="info-item"><span class="lbl">Company</span><span class="val">${s.practicum.company || "—"}</span></div>
+          <div class="info-item"><span class="lbl">Supervisor</span><span class="val">${s.practicum.supervisor || "—"}</span></div>
+          <div class="info-item"><span class="lbl">Required Hours</span><span class="val">${s.practicum.requiredHours || "—"}</span></div>
+          <div class="info-item"><span class="lbl">Completed Hours</span><span class="val">${s.practicum.completedHours || "—"}</span></div>
+          <div class="info-item"><span class="lbl">Units</span><span class="val">${s.practicum.units || "—"}</span></div>
+          <div class="info-item"><span class="lbl">Remarks</span><span class="val">${s.practicum.remarks || "—"}</span></div>
+        </div>
+      </div>
+    </div>` : "";
+
+  document.getElementById("viewContent").innerHTML = `
+    <div class="view-section">
+      <div class="view-section-title">Student Information</div>
+      <div class="info-grid">
+        <div class="info-item"><span class="lbl">Student ID</span><span class="val">${s.studentId}</span></div>
+        <div class="info-item"><span class="lbl">Full Name</span><span class="val">${s.fullName}</span></div>
+        <div class="info-item"><span class="lbl">Course</span><span class="val">${s.course}</span></div>
+        <div class="info-item"><span class="lbl">Year Level</span><span class="val">${s.yearLevel || 1}${yrSfx(s.yearLevel || 1)} Year</span></div>
+      </div>
+    </div>
+    <div class="view-section">
+      <div class="view-section-title">Subjects Enrolled</div>
+      ${subjHtml}
+    </div>
+    ${pracHtml}
+    <div class="view-section">
+      <div class="view-section-title">Requirements</div>
+      <div class="req-view-list">${reqHtml}</div>
+    </div>`;
+
+  document.getElementById("viewModal").style.display = "flex";
+}
+
+function closeModal() { document.getElementById("viewModal").style.display = "none"; }
+function yrSfx(y)     { return y==1?"st":y==2?"nd":y==3?"rd":"th"; }
+
+document.getElementById("viewModal").addEventListener("click", function(e) {
+  if (e.target === this) closeModal();
+});
+
+document.addEventListener("DOMContentLoaded", loadDashboard);
+setInterval(loadDashboard, 5000);
+window.addEventListener("storage", loadDashboard);
+</script>
+</body>
+</html>

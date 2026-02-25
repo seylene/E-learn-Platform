@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Grade Evaluation</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">
+    <img src="images/logo.png" class="logo-img">
+    <small>Digital Academic Operating System</small>
+  </div>
+  <div class="user-info">
+    Registrar | Ms. Ana Cruz
+    <button class="logout-btn" onclick="logout()">Logout</button>
+  </div>
+</div>
+
+<div class="container">
+  <div class="sidebar">
+  <h4>REGISTRAR</h4>
+    <a href="registrar_profile.html">My Profile</a>
+    <a href="registrar_dashboard.html">Dashboard</a>
+    <a href="registrar_students.html">Student Records</a>
+    <a href="registrar_faculty.html">Faculty Records</a>
+    <a href="registrar_grades.html" class="active">Grade Evaluation</a>
+    <h4 style="margin-top:16px;font-size:10px;letter-spacing:1px;opacity:.7;">MANAGEMENT</h4>
+    <a href="registrar_college.html">Colleges</a>
+    <a href="registrar_course.html">Courses</a>
+    <a href="registrar_subject.html">Subjects</a>
+    <a href="registrar_yearlevel.html">Year Levels</a>
+    <a href="registrar_semester.html">Semesters</a>
+    <a href="registrar_section.html">Sections</a>
+    <a href="registrar_academic.html">Academic Year</a>
+    <h4 style="margin-top:16px;font-size:10px;letter-spacing:1px;opacity:.7;">RECORDS</h4>
+    <a href="registrar_parents.html">Parents</a>
+    <a href="registrar_employees.html">Employees</a>
+    <a href="registrar_admission.html">Admission</a>
+    <h4 style="margin-top:16px;font-size:10px;letter-spacing:1px;opacity:.7;">OTHERS</h4>
+    <a href="registrar_reports.html">Reports</a>
+    <a href="registrar_logs.html">User Logs</a>
+    <a href="registrar_roles.html">Roles & Permissions</a>
+  </div>
+
+  <div class="content">
+    <div class="print-header">
+      <h2>Official Grade Report</h2>
+      <p>Digital Academic Operating System · Registrar's Office</p>
+      <p id="printMeta"></p>
+    </div>
+
+    <h2>Grade Evaluation</h2>
+
+    <!-- STATS -->
+    <div class="grade-stats" id="gradeStats"></div>
+
+    <!-- POSTING WINDOW CONFIG -->
+    <div class="posting-config">
+      <span style="font-size:13px;font-weight:700;color:#374151;">📅 Grade Posting Window</span>
+      <label>Start:</label>
+      <input type="datetime-local" id="windowStart">
+      <label>Deadline:</label>
+      <input type="datetime-local" id="windowDeadline">
+      <button class="btn-set-window" onclick="saveWindow()">Set Window</button>
+      <span class="window-status" id="windowStatus">No window set yet.</span>
+    </div>
+
+    <!-- DEADLINE BANNER -->
+    <div class="deadline-banner no-set" id="deadlineBanner">
+      <div class="dl-left"><span class="dl-icon">🕐</span><span id="bannerText">Set a grade posting window above.</span></div>
+    </div>
+
+    <!-- FILTER BAR -->
+    <div class="filter-bar">
+      <label>S.Y.</label>
+      <select id="filterSY" onchange="applyFilters()">
+        <option value="">All</option>
+        <option value="2024-2025">2024–2025</option>
+        <option value="2025-2026" selected>2025–2026</option>
+        <option value="2026-2027">2026–2027</option>
+      </select>
+      <label>Semester</label>
+      <select id="filterSem" onchange="applyFilters()">
+        <option value="">All</option>
+        <option value="1st" selected>1st Sem</option>
+        <option value="2nd">2nd Sem</option>
+        <option value="Summer">Summer</option>
+      </select>
+      <label>Course</label>
+      <select id="filterCourse" onchange="applyFilters()"><option value="">All</option></select>
+      <label>Year</label>
+      <select id="filterYear" onchange="applyFilters()">
+        <option value="">All</option>
+        <option value="1">1st</option><option value="2">2nd</option>
+        <option value="3">3rd</option><option value="4">4th</option>
+      </select>
+      <label>Status</label>
+      <select id="filterApproval" onchange="applyFilters()">
+        <option value="">All</option>
+        <option value="approved">Approved</option>
+        <option value="pending">Pending</option>
+      </select>
+      <input type="text" id="searchStudent" placeholder="🔍 Search student..." oninput="applyFilters()" style="min-width:145px;">
+      <div class="filter-sep"></div>
+      <button class="btn-export-all" onclick="exportAll()">⬇ Export All PDF</button>
+    </div>
+
+    <!-- TABLE -->
+    <div class="grade-wrap" id="gradeWrap"></div>
+
+    <!-- NOTIFICATION LOG -->
+    <div class="notif-log" id="notifLog" style="display:none;">
+      <h4>📬 Dean Notifications Log</h4>
+      <div id="notifList"></div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+  </div>
+</div>
+
+<!-- DEAN NOTIFICATION MODAL -->
+<div class="modal" id="deanModal">
+  <div class="modal-box">
+    <h3>📧 Notify Dean</h3>
+    <div id="deanModalReason" style="font-size:12px;color:#dc2626;font-weight:600;margin-bottom:10px;background:#fef2f2;border-radius:6px;padding:8px 12px;"></div>
+    <label style="font-size:12px;font-weight:700;color:#374151;display:block;margin-bottom:5px;">Message to Dean:</label>
+    <textarea id="deanMessage"></textarea>
+    <div class="modal-footer">
+      <button class="btn-cancel-modal" onclick="closeDeanModal()">Cancel</button>
+      <button class="btn-send-dean" onclick="sendDeanNotif()">📤 Send Notification</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   DATA & STATE
+============================================================ */
+const REMARKS_OPTIONS = ["Passed","Failed","Incomplete","Dropped","No Grade"];
+const PH_GRADES = [
+  {min:97,max:100,g:"1.00"},{min:94,max:96,g:"1.25"},{min:91,max:93,g:"1.50"},
+  {min:88,max:90,g:"1.75"},{min:85,max:87,g:"2.00"},{min:82,max:84,g:"2.25"},
+  {min:79,max:81,g:"2.50"},{min:76,max:78,g:"2.75"},{min:75,max:75,g:"3.00"},
+  {min:0, max:74, g:"5.00"},
+];
+
+let students       = [];
+let gradeData      = {};  // { studentId: { subjKey: { grade, remarks } } }
+let approvalData   = {};  // { studentId: "approved" | "pending" }
+let paymentData    = {};  // { studentId: true | false }
+let postingWindow  = {};  // { start: ISO, deadline: ISO }
+let notifLog       = [];  // [ { time, reason, message, type } ]
+let currentFiltered= [];
+
+function loadData() {
+  students      = JSON.parse(localStorage.getItem("students"))      || [];
+  gradeData     = JSON.parse(localStorage.getItem("gradeData"))     || {};
+  approvalData  = JSON.parse(localStorage.getItem("approvalData"))  || {};
+  paymentData   = JSON.parse(localStorage.getItem("paymentData"))   || {};
+  postingWindow = JSON.parse(localStorage.getItem("postingWindow")) || {};
+  notifLog      = JSON.parse(localStorage.getItem("gradeNotifLog")) || [];
+}
+
+function persist() {
+  localStorage.setItem("gradeData",     JSON.stringify(gradeData));
+  localStorage.setItem("approvalData",  JSON.stringify(approvalData));
+  localStorage.setItem("paymentData",   JSON.stringify(paymentData));
+  localStorage.setItem("postingWindow", JSON.stringify(postingWindow));
+  localStorage.setItem("gradeNotifLog", JSON.stringify(notifLog));
+}
+
+/* ============================================================
+   GRADE HELPERS
+============================================================ */
+function rawToGrade(raw) {
+  const n = parseFloat(raw);
+  if (isNaN(n)) return "";
+  for (const r of PH_GRADES) if (n >= r.min && n <= r.max) return r.g;
+  return "5.00";
+}
+function gradeStatus(g) {
+  if (!g) return "no";
+  if (g === "INC") return "inc";
+  if (g === "DRP") return "drop";
+  const n = parseFloat(g); if (isNaN(n)) return "no";
+  return n <= 3.00 ? "pass" : "fail";
+}
+function statusBadge(g) {
+  return ({
+    pass:`<span class="sb sb-pass">Passed</span>`,
+    fail:`<span class="sb sb-fail">Failed</span>`,
+    inc:`<span class="sb sb-inc">Incomplete</span>`,
+    drop:`<span class="sb sb-drop">Dropped</span>`,
+    no:`<span class="sb sb-no">No Grade</span>`,
+  })[gradeStatus(g)] || "";
+}
+function gradeInputCls(g) {
+  return ({pass:"grade-pass",fail:"grade-fail",inc:"grade-inc",drop:"grade-warning",no:"grade-inc"})[gradeStatus(g)] || "";
+}
+function subjKey(subj) { return (subj.code||subj.name||"").replace(/\s+/g,"_").toLowerCase(); }
+function computeGWA(sid, subjects) {
+  let units=0, sum=0, inc=false;
+  subjects.forEach(subj => {
+    const g = ((gradeData[sid]||{})[subjKey(subj)]||{}).grade || "";
+    const u = parseFloat(subj.units)||0;
+    const n = parseFloat(g);
+    if (!g||g==="INC"||g==="DRP"||g==="NG"){inc=true;return;}
+    sum+=n*u; units+=u;
+  });
+  if (!units) return null;
+  return { gwa:(sum/units).toFixed(2), inc };
+}
+function gwaClass(gwa) {
+  const n = parseFloat(gwa);
+  if (n<=1.75) return "gwa-pass2";
+  if (n<=3.00) return "gwa-warn2";
+  return "gwa-fail2";
+}
+
+/* ============================================================
+   POSTING WINDOW
+============================================================ */
+function saveWindow() {
+  const s = document.getElementById("windowStart").value;
+  const d = document.getElementById("windowDeadline").value;
+  if (!s || !d) { showToast("⚠️ Set both start and deadline."); return; }
+  if (new Date(s) >= new Date(d)) { showToast("⚠️ Start must be before deadline."); return; }
+  postingWindow = { start: s, deadline: d };
+  persist();
+  updateBanner();
+  showToast("✅ Posting window saved.");
+}
+
+function loadWindowInputs() {
+  if (postingWindow.start)    document.getElementById("windowStart").value    = postingWindow.start;
+  if (postingWindow.deadline) document.getElementById("windowDeadline").value = postingWindow.deadline;
+}
+
+function getPostingStatus() {
+  // Returns: "no-set" | "early" | "on-time" | "late"
+  if (!postingWindow.start || !postingWindow.deadline) return "no-set";
+  const now      = new Date();
+  const start    = new Date(postingWindow.start);
+  const deadline = new Date(postingWindow.deadline);
+  if (now < start)    return "early";
+  if (now > deadline) return "late";
+  return "on-time";
+}
+
+function updateBanner() {
+  const status = getPostingStatus();
+  const banner = document.getElementById("deadlineBanner");
+  const text   = document.getElementById("bannerText");
+  const ws     = document.getElementById("windowStatus");
+
+  banner.className = "deadline-banner " + status;
+
+  const fmt = dt => new Date(dt).toLocaleString("en-PH", { dateStyle:"medium", timeStyle:"short" });
+
+  const msgs = {
+    "no-set":  { icon:"🕐", text:"No grade posting window set yet. Please configure above.", btn:false },
+    "early":   { icon:"⚠️", text:`Grade posting has NOT started yet. Window opens ${postingWindow.start ? fmt(postingWindow.start) : "—"}.`, btn:true, btnLabel:"⚠️ Notify Dean (Early Posting Attempt)", type:"early" },
+    "on-time": { icon:"✅", text:`Grade posting is OPEN. Deadline: ${postingWindow.deadline ? fmt(postingWindow.deadline) : "—"}`, btn:false },
+    "late":    { icon:"🚨", text:`Grade posting DEADLINE HAS PASSED (${postingWindow.deadline ? fmt(postingWindow.deadline) : "—"}). Grades posted now are LATE.`, btn:true, btnLabel:"🚨 Notify Dean (Late Posting)", type:"late" },
+  };
+
+  const m = msgs[status];
+  banner.innerHTML = `
+    <div class="dl-left"><span class="dl-icon">${m.icon}</span><span>${m.text}</span></div>
+    ${m.btn ? `<button class="btn-notify-dean" onclick="openDeanModal('${m.type}')">${m.btnLabel}</button>` : ""}`;
+
+  if (postingWindow.start && postingWindow.deadline) {
+    ws.textContent = `Window: ${fmt(postingWindow.start)} → ${fmt(postingWindow.deadline)}`;
+  }
+}
+
+/* ============================================================
+   PAYMENT TOGGLE
+============================================================ */
+function togglePayment(sid) {
+  paymentData[sid] = !paymentData[sid];
+  persist();
+  // Re-render just the badges and grade visibility
+  applyFilters();
+  showToast(paymentData[sid] ? "✅ Marked as Paid — grades now visible to student." : "🔒 Marked as Unpaid — grades hidden from student.");
+}
+
+/* ============================================================
+   APPROVAL
+============================================================ */
+function approveGrades(sid) {
+  const status = getPostingStatus();
+  if (status === "early") {
+    if (!confirm("⚠️ The posting window has NOT started yet. Approving now will be flagged as EARLY POSTING. Proceed?")) return;
+    openDeanModal("early", sid);
+  }
+  if (status === "late") {
+    if (!confirm("🚨 The deadline has PASSED. Approving now will be flagged as LATE POSTING. Proceed?")) return;
+    openDeanModal("late", sid);
+  }
+  approvalData[sid] = "approved";
+  persist();
+  applyFilters();
+  showToast("✅ Grades approved for " + (students.find(s=>s.studentId===sid)?.fullName||sid));
+}
+
+function unapproveGrades(sid) {
+  approvalData[sid] = "pending";
+  persist();
+  applyFilters();
+  showToast("↩️ Approval revoked.");
+}
+
+/* ============================================================
+   DEAN NOTIFICATION MODAL
+============================================================ */
+let _pendingDeanType = "";
+let _pendingDeanSid  = "";
+
+function openDeanModal(type, sid = "") {
+  _pendingDeanType = type;
+  _pendingDeanSid  = sid;
+  const now  = new Date().toLocaleString("en-PH", { dateStyle:"medium", timeStyle:"short" });
+  const s    = students.find(st=>st.studentId===sid);
+  const name = s ? `for ${s.fullName} (${sid})` : "(all)";
+  const reasonMap = {
+    early: `⚠️ EARLY POSTING ATTEMPT: Grades were approved before the posting window opened.`,
+    late:  `🚨 LATE GRADE POSTING: Grades were approved after the posting deadline.`,
+  };
+  document.getElementById("deanModalReason").textContent = reasonMap[type] || "";
+  document.getElementById("deanMessage").value =
+    `Dear Dean,\n\nThis is to notify you that grade evaluation ${name} was posted at ${now}.\n\nReason: ${type === "late" ? "Grades were submitted AFTER the deadline." : "Grades were submitted BEFORE the posting window opened."}\n\nPosting Window: ${postingWindow.start ? new Date(postingWindow.start).toLocaleString("en-PH") : "—"} to ${postingWindow.deadline ? new Date(postingWindow.deadline).toLocaleString("en-PH") : "—"}\n\nPlease take the necessary action.\n\nRespectfully,\nRegistrar's Office`;
+  document.getElementById("deanModal").classList.add("open");
+}
+
+function closeDeanModal() { document.getElementById("deanModal").classList.remove("open"); }
+
+function sendDeanNotif() {
+  const msg = document.getElementById("deanMessage").value.trim();
+  if (!msg) { showToast("⚠️ Message cannot be empty."); return; }
+  notifLog.unshift({
+    time: new Date().toISOString(),
+    type: _pendingDeanType,
+    sid:  _pendingDeanSid,
+    message: msg,
+  });
+  persist();
+  closeDeanModal();
+  renderNotifLog();
+  showToast("📤 Dean notified successfully.");
+}
+
+function renderNotifLog() {
+  const log = document.getElementById("notifLog");
+  const list= document.getElementById("notifList");
+  if (!notifLog.length) { log.style.display="none"; return; }
+  log.style.display = "block";
+  list.innerHTML = notifLog.map(n => {
+    const t = new Date(n.time).toLocaleString("en-PH", { dateStyle:"medium", timeStyle:"short" });
+    const s = students.find(st=>st.studentId===n.sid);
+    const label = n.type==="late" ? "🚨 Late Posting" : "⚠️ Early Posting";
+    return `
+      <div class="notif-item">
+        <div class="notif-dot sent"></div>
+        <div style="flex:1;">
+          <strong>${label}</strong>${s ? ` — ${s.fullName}` : ""}<br>
+          <span style="color:#374151;font-size:12px;">${n.message.split("\n")[0]}</span>
+        </div>
+        <div class="notif-time">${t}</div>
+      </div>`;
+  }).join("");
+}
+
+/* ============================================================
+   FILTERS & STATS
+============================================================ */
+function populateFilters() {
+  const el = document.getElementById("filterCourse");
+  const courses = [...new Set(students.filter(s=>s.enrolled).map(s=>s.course))].sort();
+  el.innerHTML = `<option value="">All</option>` + courses.map(c=>`<option>${c}</option>`).join("");
+}
+
+function applyFilters() {
+  const course   = document.getElementById("filterCourse").value;
+  const year     = document.getElementById("filterYear").value;
+  const approval = document.getElementById("filterApproval").value;
+  const search   = document.getElementById("searchStudent").value.trim().toLowerCase();
+
+  currentFiltered = students.filter(s => {
+    if (!s.enrolled) return false;
+    if (course   && s.course    !== course) return false;
+    if (year     && s.yearLevel != year)    return false;
+    if (approval && (approvalData[s.studentId]||"pending") !== approval) return false;
+    if (search   && !s.fullName.toLowerCase().includes(search) && !s.studentId.includes(search)) return false;
+    return true;
+  });
+
+  renderStats(currentFiltered);
+  renderTable(currentFiltered);
+  updateBanner();
+}
+
+function renderStats(list) {
+  let approved=0, pending=0, paid=0, unpaid=0, late=0;
+  list.forEach(s => {
+    (approvalData[s.studentId]||"pending") === "approved" ? approved++ : pending++;
+    paymentData[s.studentId] ? paid++ : unpaid++;
+  });
+  if (getPostingStatus() === "late") late = pending;
+
+  document.getElementById("gradeStats").innerHTML = [
+    ["👥","Students",list.length,"enrolled",""],
+    ["✅","Approved",approved,"grades released","#16a34a"],
+    ["⏳","Pending",pending,"awaiting approval","#d97706"],
+    ["💳","Paid",paid,"can view grades","#2f4cff"],
+    ["🔒","Unpaid",unpaid,"grades hidden","#dc2626"],
+  ].map(([icon,label,val,sub,color])=>`
+    <div class="gstat-card">
+      <div class="gstat-icon">${icon}</div>
+      <div>
+        <div class="gstat-label">${label}</div>
+        <div class="gstat-val" style="${color?`color:${color}`:''}">${val}</div>
+        <div style="font-size:11px;color:#9ca3af;">${sub}</div>
+      </div>
+    </div>`).join("");
+}
+
+/* ============================================================
+   RENDER TABLE
+============================================================ */
+function renderTable(list) {
+  const wrap = document.getElementById("gradeWrap");
+  if (!list.length) {
+    wrap.innerHTML=`<div class="empty-state"><div class="es-icon">📭</div><div class="es-title">No students found.</div></div>`;
+    return;
+  }
+  const sfx = ["st","nd","rd","th"];
+  const isApproved = sid => (approvalData[sid]||"pending") === "approved";
+  const hasPaid    = sid => !!paymentData[sid];
+
+  const rows = list.map(s => {
+    const subjs    = s.subjects||[];
+    const approved = isApproved(s.studentId);
+    const paid     = hasPaid(s.studentId);
+    const yr       = sfx[(parseInt(s.yearLevel)||1)-1]||"th";
+    const apprCls  = approved ? "appr-approved" : "appr-pending";
+    const apprLbl  = approved ? "✅ Approved" : "⏳ Pending Approval";
+    const gwaInfo  = computeGWA(s.studentId, subjs);
+
+    // Payment badge (clickable toggle for registrar)
+    const payBtn = `<button class="pay-badge ${paid?"pay-paid":"pay-unpaid"}"
+      onclick="togglePayment('${s.studentId}')" title="Click to toggle payment status">
+      ${paid?"💳 Paid":"🔒 Unpaid"}
+    </button>`;
+
+    let html = `
+      <tr class="row-student">
+        <td colspan="7">
+          ${s.fullName}
+          <span class="student-id-tag">${s.studentId}</span>
+          <span class="course-tag">${s.course} · ${s.yearLevel||1}${yr} Year</span>
+          ${payBtn}
+          <span class="approval-badge ${apprCls}" style="margin-left:6px;">${apprLbl}</span>
+          ${!paid ? `<span class="locked-notice" style="margin-left:6px;">🔒 Grade hidden from student</span>` : ""}
+        </td>
+      </tr>`;
+
+    if (!subjs.length) {
+      html += `<tr class="row-subject"><td colspan="7" style="color:#9ca3af;font-style:italic;padding:10px 12px;">No subjects enrolled.</td></tr>`;
+    } else {
+      subjs.forEach(subj => {
+        const key = subjKey(subj);
+        const rec = ((gradeData[s.studentId]||{})[key])||{grade:"",remarks:""};
+        const g   = rec.grade||"";
+        const isRaw = parseFloat(g)>5;
+        const equiv = isRaw ? rawToGrade(g) : (g && parseFloat(g)<=5 && parseFloat(g)>0 ? g : "");
+        const remarksOpts = REMARKS_OPTIONS.map(r=>`<option value="${r}" ${rec.remarks===r?"selected":""}>${r}</option>`).join("");
+        const disabled = approved ? "disabled" : "";
+
+        html += `
+          <tr class="row-subject">
+            <td>
+              <div class="subj-name">${subj.name||"—"}</div>
+              <div class="subj-meta">${[subj.code,subj.units?subj.units+"u":null,subj.faculty].filter(Boolean).join(" · ")}</div>
+            </td>
+            <td>
+              <input type="number" class="grade-input ${gradeInputCls(g)}" id="gi_${s.studentId}_${key}"
+                value="${g}" min="0" max="100" step="0.25" placeholder="—" ${disabled}
+                oninput="onGradeInput('${s.studentId}','${key}',this)"
+                title="${approved?"Grades are locked after approval. Revoke approval to edit.":"Enter raw score (0–100) or PH grade (1.00–5.00)"}">
+            </td>
+            <td class="ph-equiv" id="conv_${s.studentId}_${key}">${equiv||"—"}</td>
+            <td id="stat_${s.studentId}_${key}">${statusBadge(g)}</td>
+            <td>
+              <select class="remarks-select" ${disabled} onchange="onRemarksChange('${s.studentId}','${key}',this)">
+                <option value="">— Remarks —</option>
+                ${remarksOpts}
+              </select>
+            </td>
+            <td>
+              <!-- Student view: hidden if unpaid -->
+              ${approved && paid
+                ? `<span class="sb sb-pass" style="font-size:11px;">👁 Visible to Student</span>`
+                : approved && !paid
+                  ? `<span class="sb sb-inc" style="font-size:11px;">🔒 Pay Required</span>`
+                  : `<span class="sb sb-no" style="font-size:11px;">Not Yet Approved</span>`
+              }
+            </td>
+          </tr>`;
+      });
+
+      // GWA — hide from student if unpaid
+      const gText = gwaInfo ? gwaInfo.gwa+(gwaInfo.inc?" (incomplete)":"") : "—";
+      const gCls  = gwaInfo ? gwaClass(gwaInfo.gwa) : "gwa-none";
+      html += `
+        <tr class="row-gwa">
+          <td style="font-weight:700;color:#374151;font-size:12px;">General Weighted Average</td>
+          <td colspan="2">
+            ${approved && paid
+              ? `<span class="gwa-val ${gCls}" id="gwa_${s.studentId}">${gText}</span>`
+              : approved && !paid
+                ? `<span class="gwa-val gwa-hidden" id="gwa_${s.studentId}">🔒 Hidden — student must pay first</span>`
+                : `<span class="gwa-val gwa-none" id="gwa_${s.studentId}">Pending approval</span>`}
+          </td>
+          <td colspan="4"></td>
+        </tr>`;
+    }
+
+    // Actions
+    html += `
+      <tr class="row-actions">
+        <td colspan="7">
+          ${!approved
+            ? `<button class="btn-save" onclick="saveStudentGrades('${s.studentId}')">💾 Save</button>
+               <button class="btn-approve" onclick="approveGrades('${s.studentId}')">✅ Approve & Release</button>`
+            : `<button class="btn-unapprove" onclick="unapproveGrades('${s.studentId}')">↩️ Revoke Approval</button>`}
+          <button class="btn-pdf" onclick="downloadPDF('${s.studentId}')">📄 Download PDF</button>
+        </td>
+      </tr>`;
+
+    return html;
+  }).join("");
+
+  wrap.innerHTML = `
+    <table>
+      <thead>
+        <tr>
+          <th style="width:26%">Subject</th>
+          <th style="width:9%">Grade</th>
+          <th style="width:9%">PH Equiv.</th>
+          <th style="width:11%">Status</th>
+          <th style="width:13%">Remarks</th>
+          <th style="width:14%">Student View</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+/* ============================================================
+   GRADE INPUT HANDLERS
+============================================================ */
+function onGradeInput(sid, key, input) {
+  const raw = input.value.trim();
+  const n   = parseFloat(raw);
+  const g   = (!isNaN(n) && n > 5) ? rawToGrade(raw) : raw;
+
+  const convEl = document.getElementById(`conv_${sid}_${key}`);
+  if (convEl) convEl.textContent = (!isNaN(n) && n > 5) ? g : "—";
+  const statEl = document.getElementById(`stat_${sid}_${key}`);
+  if (statEl) statEl.innerHTML = statusBadge(g);
+  input.className = "grade-input " + gradeInputCls(g);
+
+  if (!gradeData[sid]) gradeData[sid] = {};
+  if (!gradeData[sid][key]) gradeData[sid][key] = {};
+  gradeData[sid][key].grade = g;
+  updateGWA(sid);
+}
+
+function onRemarksChange(sid, key, sel) {
+  if (!gradeData[sid]) gradeData[sid] = {};
+  if (!gradeData[sid][key]) gradeData[sid][key] = {};
+  gradeData[sid][key].remarks = sel.value;
+}
+
+function updateGWA(sid) {
+  const s = students.find(st=>st.studentId===sid);
+  if (!s) return;
+  const gwaInfo = computeGWA(sid, s.subjects||[]);
+  const el = document.getElementById("gwa_"+sid);
+  if (!el) return;
+  if (gwaInfo) {
+    el.textContent = gwaInfo.gwa+(gwaInfo.inc?" (incomplete)":"");
+    el.className   = "gwa-val "+gwaClass(gwaInfo.gwa);
+  } else {
+    el.textContent="—"; el.className="gwa-val gwa-none";
+  }
+}
+
+function saveStudentGrades(sid) {
+  persist();
+  renderStats(currentFiltered);
+  showToast("💾 Grades saved — "+(students.find(s=>s.studentId===sid)?.fullName||sid));
+}
+
+/* ============================================================
+   PRINT / EXPORT
+============================================================ */
+function downloadPDF(sid) {
+  const s = students.find(st=>st.studentId===sid);
+  if (!s) return;
+  const sy  = document.getElementById("filterSY").value||"2025-2026";
+  const sem = document.getElementById("filterSem").value||"1st";
+  document.getElementById("printMeta").textContent =
+    `${s.fullName} · ${s.studentId} · ${s.course} · ${sy} – ${sem} Semester`;
+  window.print();
+}
+
+function exportAll() {
+  const sy  = document.getElementById("filterSY").value||"2025-2026";
+  const sem = document.getElementById("filterSem").value||"1st";
+  document.getElementById("printMeta").textContent =
+    `All Students · ${sy} – ${sem} Semester · ${new Date().toLocaleDateString("en-PH")}`;
+  window.print();
+}
+
+/* ============================================================
+   TOAST
+============================================================ */
+function showToast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.classList.add("show");
+  setTimeout(()=>t.classList.remove("show"), 2800);
+}
+
+function logout() { window.location.href = "login.html"; }
+
+/* ============================================================
+   INIT
+============================================================ */
+loadData();
+populateFilters();
+loadWindowInputs();
+updateBanner();
+applyFilters();
+renderNotifLog();
+
+// Auto-refresh banner every minute to catch deadline changes
+setInterval(updateBanner, 60000);
+</script>
+</body>
+</html>

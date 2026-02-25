@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Academic Year Management</title>
+<link rel="stylesheet" href="css/style.css">
+<style>
+.ay-status{font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;}
+.ay-active{background:#dcfce7;color:#16a34a;}
+.ay-inactive{background:#f3f4f6;color:#6b7280;}
+.ay-upcoming{background:#fef9c3;color:#a16207;}
+</style>
+</head>
+<body>
+<div class="header">
+  <div class="logo"><img src="images/logo.png" class="logo-img"><small>Digital Academic Operating System</small></div>
+  <div class="user-info">Registrar | Ms. Ana Cruz <button class="logout-btn" onclick="logout()">Logout</button></div>
+</div>
+<div class="container">
+  <div class="sidebar">
+    <h4>REGISTRAR</h4>
+    <a href="registrar_profile.html">My Profile</a>
+    <a href="registrar_dashboard.html">Dashboard</a>
+    <a href="registrar_students.html">Student Records</a>
+    <a href="registrar_faculty.html">Faculty Records</a>
+    <a href="registrar_grades.html">Grade Evaluation</a>
+    <h4 style="margin-top:16px;font-size:10px;letter-spacing:1px;opacity:.7;">MANAGEMENT</h4>
+    <a href="registrar_college.html">Colleges</a>
+    <a href="registrar_course.html">Courses</a>
+    <a href="registrar_subject.html">Subjects</a>
+    <a href="registrar_yearlevel.html">Year Levels</a>
+    <a href="registrar_semester.html">Semesters</a>
+    <a href="registrar_section.html">Sections</a>
+    <a href="registrar_academic.html" class="active">Academic Year</a>
+    <h4 style="margin-top:16px;font-size:10px;letter-spacing:1px;opacity:.7;">RECORDS</h4>
+    <a href="registrar_parents.html">Parents</a>
+    <a href="registrar_employees.html">Employees</a>
+    <a href="registrar_admission.html">Admission</a>
+    <h4 style="margin-top:16px;font-size:10px;letter-spacing:1px;opacity:.7;">OTHERS</h4>
+    <a href="registrar_reports.html">Reports</a>
+    <a href="registrar_logs.html">User Logs</a>
+    <a href="registrar_roles.html">Roles & Permissions</a>
+  </div>
+  <div class="content">
+    <h2>Academic Year Management</h2>
+    <button class="add-btn" onclick="openModal()">+ Add Academic Year</button>
+    <table>
+      <thead><tr><th>Academic Year</th><th>Start Date</th><th>End Date</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody id="ayTable"></tbody>
+    </table>
+  </div>
+</div>
+
+<div id="modal" class="modal">
+  <div class="modal-content" style="width:440px;">
+    <h3 id="modalTitle">Add Academic Year</h3>
+    <input type="hidden" id="editIndex">
+    <div class="modal-section">
+      <div class="modal-section-title">Academic Year Information</div>
+      <div class="form-row">
+        <div class="field"><label>Academic Year</label><input type="text" id="ayYear" placeholder="e.g. 2025-2026"></div>
+      </div>
+      <div class="form-row col2">
+        <div class="field"><label>Start Date</label><input type="date" id="ayStart"></div>
+        <div class="field"><label>End Date</label><input type="date" id="ayEnd"></div>
+      </div>
+      <div class="form-row">
+        <div class="field"><label>Status</label>
+          <select id="ayStatus">
+            <option value="Active">Active</option>
+            <option value="Upcoming">Upcoming</option>
+            <option value="Inactive">Inactive</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <button class="enroll-btn" onclick="saveAY()">Save Academic Year</button>
+    <button class="danger enroll-btn" onclick="closeModal()" style="margin-top:8px;">Cancel</button>
+  </div>
+</div>
+
+<script>
+let academicYears = JSON.parse(localStorage.getItem("academicYears")) || [];
+
+function render(){
+  const tbody = document.getElementById("ayTable");
+  if(!academicYears.length){ tbody.innerHTML=`<tr><td colspan="5" class="empty-note">No academic years yet.</td></tr>`; return; }
+  tbody.innerHTML = academicYears.map((a,i)=>{
+    const cls = a.status==="Active"?"ay-active":a.status==="Upcoming"?"ay-upcoming":"ay-inactive";
+    return `<tr>
+      <td><strong>${a.year}</strong></td>
+      <td>${a.start||'—'}</td>
+      <td>${a.end||'—'}</td>
+      <td><span class="ay-status ${cls}">${a.status||'Inactive'}</span></td>
+      <td>
+        <button onclick="setActive(${i})" style="${a.status==='Active'?'background:#16a34a;':''}">
+          ${a.status==='Active'?'✅ Active':'Set Active'}
+        </button>
+        <button onclick="editAY(${i})">Edit</button>
+        <button class="danger" onclick="deleteAY(${i})">Delete</button>
+      </td>
+    </tr>`;
+  }).join("");
+}
+
+function setActive(i){
+  academicYears.forEach((a,idx)=>{ a.status = idx===i ? "Active" : "Inactive"; });
+  localStorage.setItem("academicYears", JSON.stringify(academicYears));
+  render();
+}
+
+function openModal(){ clearForm(); document.getElementById("modalTitle").textContent="Add Academic Year"; document.getElementById("modal").style.display="flex"; }
+function closeModal(){ document.getElementById("modal").style.display="none"; }
+function clearForm(){ ["ayYear","ayStart","ayEnd"].forEach(id=>document.getElementById(id).value=""); document.getElementById("ayStatus").value="Active"; document.getElementById("editIndex").value=""; }
+
+function saveAY(){
+  const year = document.getElementById("ayYear").value.trim();
+  if(!year){ alert("Academic year is required."); return; }
+  const data = { year, start:document.getElementById("ayStart").value, end:document.getElementById("ayEnd").value, status:document.getElementById("ayStatus").value };
+  const idx = document.getElementById("editIndex").value;
+  if(idx==="") academicYears.push(data); else academicYears[parseInt(idx)]=data;
+  localStorage.setItem("academicYears", JSON.stringify(academicYears));
+  closeModal(); render();
+}
+
+function editAY(i){
+  const a = academicYears[i];
+  document.getElementById("modalTitle").textContent="Edit Academic Year";
+  document.getElementById("editIndex").value=i;
+  document.getElementById("ayYear").value   = a.year;
+  document.getElementById("ayStart").value  = a.start||"";
+  document.getElementById("ayEnd").value    = a.end||"";
+  document.getElementById("ayStatus").value = a.status||"Active";
+  document.getElementById("modal").style.display="flex";
+}
+
+function deleteAY(i){ if(confirm("Delete this academic year?")){ academicYears.splice(i,1); localStorage.setItem("academicYears",JSON.stringify(academicYears)); render(); } }
+function logout(){ window.location.href="login.html"; }
+document.getElementById("modal").addEventListener("click",function(e){ if(e.target===this) closeModal(); });
+render();
+</script>
+</body>
+</html>

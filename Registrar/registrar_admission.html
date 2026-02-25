@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Admission Management</title>
+<link rel="stylesheet" href="css/style.css">
+<body>
+<div class="header">
+  <div class="logo"><img src="images/logo.png" class="logo-img"><small>Digital Academic Operating System</small></div>
+  <div class="user-info">Registrar | Ms. Ana Cruz <button class="logout-btn" onclick="logout()">Logout</button></div>
+</div>
+<div class="container">
+  <div class="sidebar">
+    <h4>REGISTRAR</h4>
+    <a href="registrar_profile.html">My Profile</a>
+    <a href="registrar_dashboard.html">Dashboard</a>
+    <a href="registrar_students.html">Student Records</a>
+    <a href="registrar_faculty.html">Faculty Records</a>
+    <a href="registrar_grades.html">Grade Evaluation</a>
+    <h4 style="margin-top:16px;font-size:10px;letter-spacing:1px;opacity:.7;">MANAGEMENT</h4>
+    <a href="registrar_college.html">Colleges</a>
+    <a href="registrar_course.html">Courses</a>
+    <a href="registrar_subject.html">Subjects</a>
+    <a href="registrar_yearlevel.html">Year Levels</a>
+    <a href="registrar_semester.html">Semesters</a>
+    <a href="registrar_section.html">Sections</a>
+    <a href="registrar_academic.html">Academic Year</a>
+    <h4 style="margin-top:16px;font-size:10px;letter-spacing:1px;opacity:.7;">RECORDS</h4>
+    <a href="registrar_parents.html">Parents</a>
+    <a href="registrar_employees.html">Employees</a>
+    <a href="registrar_admission.html" class="active">Admission</a>
+    <h4 style="margin-top:16px;font-size:10px;letter-spacing:1px;opacity:.7;">OTHERS</h4>
+    <a href="registrar_reports.html">Reports</a>
+    <a href="registrar_logs.html">User Logs</a>
+    <a href="registrar_roles.html">Roles & Permissions</a>
+  </div>
+  <div class="content">
+    <h2>Admission Management</h2>
+    <button class="add-btn" onclick="openModal()">+ New Applicant</button>
+    <div class="mgmt-stats">
+      <div class="mgmt-stat"><span class="si">📋</span><div><div class="sl">Total Applicants</div><div class="sv" id="statTotal">0</div></div></div>
+      <div class="mgmt-stat"><span class="si">⏳</span><div><div class="sl">Pending</div><div class="sv" id="statPending" style="color:#d97706;">0</div></div></div>
+      <div class="mgmt-stat"><span class="si">✅</span><div><div class="sl">Accepted</div><div class="sv" id="statAccepted" style="color:#16a34a;">0</div></div></div>
+      <div class="mgmt-stat"><span class="si">❌</span><div><div class="sl">Rejected</div><div class="sv" id="statRejected" style="color:#dc2626;">0</div></div></div>
+    </div>
+    <div class="search-bar">
+      <input type="text" id="searchInput" placeholder="🔍 Search applicant..." oninput="render()">
+      <select id="filterStatus" onchange="render()">
+        <option value="">All Status</option>
+        <option value="Pending">Pending</option>
+        <option value="Accepted">Accepted</option>
+        <option value="Rejected">Rejected</option>
+        <option value="Enrolled">Enrolled</option>
+      </select>
+      <select id="filterCourse" onchange="render()"><option value="">All Courses</option></select>
+    </div>
+    <table>
+      <thead><tr><th>Applicant Name</th><th>Course Applied</th><th>Academic Year</th><th>Contact</th><th>Date Applied</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody id="admTable"></tbody>
+    </table>
+  </div>
+</div>
+
+<div id="modal" class="modal">
+  <div class="modal-content" style="width:560px;">
+    <h3 id="modalTitle">New Applicant</h3>
+    <input type="hidden" id="editIndex">
+    <div class="modal-section">
+      <div class="modal-section-title">Applicant Information</div>
+      <div class="form-row col2">
+        <div class="field"><label>Full Name</label><input type="text" id="aName" placeholder="e.g. Juan Dela Cruz"></div>
+        <div class="field"><label>Date of Birth</label><input type="date" id="aDOB"></div>
+      </div>
+      <div class="form-row col2">
+        <div class="field"><label>Contact Number</label><input type="text" id="aContact" placeholder="09XX-XXX-XXXX"></div>
+        <div class="field"><label>Email</label><input type="text" id="aEmail" placeholder="e.g. juan@email.com"></div>
+      </div>
+      <div class="form-row col2">
+        <div class="field"><label>Course Applied</label><select id="aCourse"><option value="">-- Select --</option></select></div>
+        <div class="field"><label>Academic Year</label><select id="aAY"><option value="">-- Select --</option></select></div>
+      </div>
+      <div class="form-row col2">
+        <div class="field"><label>Previous School</label><input type="text" id="aSchool" placeholder="e.g. ABC High School"></div>
+        <div class="field"><label>GWA / Grade</label><input type="text" id="aGWA" placeholder="e.g. 90 or 1.5"></div>
+      </div>
+      <div class="form-row">
+        <div class="field"><label>Status</label>
+          <select id="aStatus">
+            <option value="Pending">Pending</option>
+            <option value="Accepted">Accepted</option>
+            <option value="Rejected">Rejected</option>
+            <option value="Enrolled">Enrolled</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="field"><label>Remarks / Notes</label><input type="text" id="aRemarks" placeholder="Optional notes"></div>
+      </div>
+    </div>
+    <button class="enroll-btn" onclick="saveAdm()">Save Applicant</button>
+    <button class="danger enroll-btn" onclick="closeModal()" style="margin-top:8px;">Cancel</button>
+  </div>
+</div>
+
+<div id="viewModal" class="modal">
+  <div class="modal-content view-modal">
+    <h3>Applicant Record</h3>
+    <div id="viewContent"></div>
+    <button class="danger" onclick="closeView()" style="margin-top:14px;">Close</button>
+  </div>
+</div>
+
+<script>
+let admissions = JSON.parse(localStorage.getItem("admissions")) || [];
+
+function populateDropdowns(){
+  const courses = JSON.parse(localStorage.getItem("courses"))||[];
+  const ays     = JSON.parse(localStorage.getItem("academicYears"))||[];
+  document.getElementById("aCourse").innerHTML  = `<option value="">-- Select Course --</option>` + courses.map(c=>`<option>${c.name}</option>`).join("");
+  document.getElementById("aAY").innerHTML      = `<option value="">-- Select AY --</option>`     + ays.map(a=>`<option>${a.year}</option>`).join("");
+  document.getElementById("filterCourse").innerHTML = `<option value="">All Courses</option>`    + courses.map(c=>`<option>${c.name}</option>`).join("");
+}
+
+function render(){
+  document.getElementById("statTotal").textContent    = admissions.length;
+  document.getElementById("statPending").textContent  = admissions.filter(a=>a.status==="Pending").length;
+  document.getElementById("statAccepted").textContent = admissions.filter(a=>a.status==="Accepted").length;
+  document.getElementById("statRejected").textContent = admissions.filter(a=>a.status==="Rejected").length;
+
+  const search = document.getElementById("searchInput").value.toLowerCase();
+  const status = document.getElementById("filterStatus").value;
+  const course = document.getElementById("filterCourse").value;
+  const filtered = admissions.map((a,i)=>({...a,_idx:i})).filter(a=>{
+    if(search && !a.name.toLowerCase().includes(search)) return false;
+    if(status && a.status!==status) return false;
+    if(course && a.course!==course) return false;
+    return true;
+  });
+
+  const statusBadge = s => {
+    const map = { Pending:"background:#fef9c3;color:#a16207;", Accepted:"background:#dcfce7;color:#16a34a;", Rejected:"background:#fee2e2;color:#dc2626;", Enrolled:"background:#eef2ff;color:#2f4cff;" };
+    return `<span style="${map[s]||'background:#f3f4f6;color:#6b7280;'}font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;">${s||'Pending'}</span>`;
+  };
+
+  const tbody = document.getElementById("admTable");
+  if(!filtered.length){ tbody.innerHTML=`<tr><td colspan="7" class="empty-note">No applicants found.</td></tr>`; return; }
+  tbody.innerHTML = filtered.map(a=>`
+    <tr>
+      <td><strong>${a.name}</strong>${a.gwa?`<div style="font-size:11px;color:#6b7280;">GWA: ${a.gwa}</div>`:''}</td>
+      <td style="font-size:12px;">${a.course||'—'}</td>
+      <td style="font-size:12px;">${a.ay||'—'}</td>
+      <td style="font-size:12px;">${a.contact||'—'}</td>
+      <td style="font-size:12px;">${a.dateApplied||'—'}</td>
+      <td>${statusBadge(a.status)}</td>
+      <td>
+        <button onclick="viewAdm(${a._idx})">View</button>
+        <button onclick="editAdm(${a._idx})">Edit</button>
+        <button class="danger" onclick="deleteAdm(${a._idx})">Delete</button>
+      </td>
+    </tr>`).join("");
+}
+
+function openModal(){ clearForm(); document.getElementById("modalTitle").textContent="New Applicant"; document.getElementById("modal").style.display="flex"; }
+function closeModal(){ document.getElementById("modal").style.display="none"; }
+function closeView(){ document.getElementById("viewModal").style.display="none"; }
+function clearForm(){ ["aName","aContact","aEmail","aSchool","aGWA","aRemarks"].forEach(id=>document.getElementById(id).value=""); document.getElementById("aDOB").value=""; document.getElementById("aCourse").value=""; document.getElementById("aAY").value=""; document.getElementById("aStatus").value="Pending"; document.getElementById("editIndex").value=""; }
+
+function saveAdm(){
+  const name = document.getElementById("aName").value.trim();
+  if(!name){ alert("Applicant name is required."); return; }
+  const data = { name, dob:document.getElementById("aDOB").value, contact:document.getElementById("aContact").value.trim(), email:document.getElementById("aEmail").value.trim(), course:document.getElementById("aCourse").value, ay:document.getElementById("aAY").value, school:document.getElementById("aSchool").value.trim(), gwa:document.getElementById("aGWA").value.trim(), status:document.getElementById("aStatus").value, remarks:document.getElementById("aRemarks").value.trim(), dateApplied:new Date().toLocaleDateString("en-PH") };
+  const idx = document.getElementById("editIndex").value;
+  if(idx==="") admissions.push(data); else admissions[parseInt(idx)]=data;
+  localStorage.setItem("admissions", JSON.stringify(admissions));
+  closeModal(); render();
+}
+
+function editAdm(i){
+  const a = admissions[i];
+  document.getElementById("modalTitle").textContent="Edit Applicant";
+  document.getElementById("editIndex").value=i;
+  document.getElementById("aName").value    = a.name;
+  document.getElementById("aDOB").value     = a.dob||"";
+  document.getElementById("aContact").value = a.contact||"";
+  document.getElementById("aEmail").value   = a.email||"";
+  document.getElementById("aCourse").value  = a.course||"";
+  document.getElementById("aAY").value      = a.ay||"";
+  document.getElementById("aSchool").value  = a.school||"";
+  document.getElementById("aGWA").value     = a.gwa||"";
+  document.getElementById("aStatus").value  = a.status||"Pending";
+  document.getElementById("aRemarks").value = a.remarks||"";
+  document.getElementById("modal").style.display="flex";
+}
+
+function viewAdm(i){
+  const a = admissions[i];
+  document.getElementById("viewContent").innerHTML = `
+    <div class="view-section">
+      <div class="view-section-title">Applicant Information</div>
+      <div class="info-grid">
+        <div class="info-item"><span class="lbl">Full Name</span><span class="val">${a.name}</span></div>
+        <div class="info-item"><span class="lbl">Date of Birth</span><span class="val">${a.dob||'—'}</span></div>
+        <div class="info-item"><span class="lbl">Contact</span><span class="val">${a.contact||'—'}</span></div>
+        <div class="info-item"><span class="lbl">Email</span><span class="val">${a.email||'—'}</span></div>
+        <div class="info-item"><span class="lbl">Course Applied</span><span class="val">${a.course||'—'}</span></div>
+        <div class="info-item"><span class="lbl">Academic Year</span><span class="val">${a.ay||'—'}</span></div>
+        <div class="info-item"><span class="lbl">Previous School</span><span class="val">${a.school||'—'}</span></div>
+        <div class="info-item"><span class="lbl">GWA</span><span class="val">${a.gwa||'—'}</span></div>
+        <div class="info-item"><span class="lbl">Date Applied</span><span class="val">${a.dateApplied||'—'}</span></div>
+        <div class="info-item"><span class="lbl">Status</span><span class="val">${a.status||'Pending'}</span></div>
+        <div class="info-item" style="grid-column:1/-1;"><span class="lbl">Remarks</span><span class="val">${a.remarks||'—'}</span></div>
+      </div>
+    </div>`;
+  document.getElementById("viewModal").style.display="flex";
+}
+
+function deleteAdm(i){ if(confirm("Delete this applicant?")){ admissions.splice(i,1); localStorage.setItem("admissions",JSON.stringify(admissions)); render(); } }
+function logout(){ window.location.href="login.html"; }
+document.getElementById("modal").addEventListener("click",function(e){ if(e.target===this) closeModal(); });
+document.getElementById("viewModal").addEventListener("click",function(e){ if(e.target===this) closeView(); });
+populateDropdowns(); render();
+</script>
+</body>
+</html>

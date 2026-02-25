@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>My Profile</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">
+    <img src="images/logo.png" class="logo-img">
+    <small>Digital Academic Operating System</small>
+  </div>
+  <div class="user-info">
+    Registrar | <span id="headerName"></span>
+    <button class="logout-btn" onclick="logout()">Logout</button>
+  </div>
+</div>
+
+<div class="container">
+  <div class="sidebar">
+    <h4>REGISTRAR</h4>
+    <a href="registrar_profile.html" class="active">My Profile</a>
+    <a href="registrar_dashboard.html">Dashboard</a>
+    <a href="registrar_students.html">Student Records</a>
+    <a href="registrar_faculty.html">Faculty Records</a>
+    <a href="registrar_grades.html">Grade Evaluation</a>
+    <h4 style="margin-top:16px;font-size:10px;letter-spacing:1px;opacity:.7;">MANAGEMENT</h4>
+    <a href="registrar_college.html">Colleges</a>
+    <a href="registrar_course.html">Courses</a>
+    <a href="registrar_subject.html">Subjects</a>
+    <a href="registrar_yearlevel.html">Year Levels</a>
+    <a href="registrar_semester.html">Semesters</a>
+    <a href="registrar_section.html">Sections</a>
+    <a href="registrar_academic.html">Academic Year</a>
+    <h4 style="margin-top:16px;font-size:10px;letter-spacing:1px;opacity:.7;">RECORDS</h4>
+    <a href="registrar_parents.html">Parents</a>
+    <a href="registrar_employees.html">Employees</a>
+    <a href="registrar_admission.html">Admission</a>
+    <h4 style="margin-top:16px;font-size:10px;letter-spacing:1px;opacity:.7;">OTHERS</h4>
+    <a href="registrar_reports.html">Reports</a>
+    <a href="registrar_logs.html">User Logs</a>
+    <a href="registrar_roles.html">Roles & Permissions</a>
+  </div>
+
+  <div class="content">
+    <h2>My Profile</h2>
+    <p class="subtitle">Manage your account information</p>
+
+    <div class="profile-wrap">
+
+      <!-- LEFT: PROFILE CARD -->
+      <div class="profile-card">
+        <div class="profile-card-top">
+          <div class="avatar-wrap" id="avatarInitials"></div>
+          <div class="profile-name" id="displayName"></div>
+          <div class="profile-role">Registrar</div>
+        </div>
+
+        <div class="profile-card-body">
+
+          <!-- VIEW MODE -->
+          <div id="viewMode">
+            <div class="section-heading">Account Information</div>
+
+            <div class="pf-row">
+              <div class="pf-icon">🪪</div>
+              <div class="pf-content">
+                <div class="pf-label">Employee ID</div>
+                <div class="pf-value" id="vEmpId"></div>
+              </div>
+            </div>
+            <div class="pf-row">
+              <div class="pf-icon">✉️</div>
+              <div class="pf-content">
+                <div class="pf-label">Email</div>
+                <div class="pf-value" id="vEmail"></div>
+              </div>
+            </div>
+            <div class="pf-row">
+              <div class="pf-icon">📱</div>
+              <div class="pf-content">
+                <div class="pf-label">Contact</div>
+                <div class="pf-value" id="vContact"></div>
+              </div>
+            </div>
+            <div class="pf-row">
+              <div class="pf-icon">🏢</div>
+              <div class="pf-content">
+                <div class="pf-label">Department</div>
+                <div class="pf-value" id="vDept"></div>
+              </div>
+            </div>
+            <div class="pf-row">
+              <div class="pf-icon">📍</div>
+              <div class="pf-content">
+                <div class="pf-label">Office Location</div>
+                <div class="pf-value" id="vOffice"></div>
+              </div>
+            </div>
+            <div class="pf-row">
+              <div class="pf-icon">🕐</div>
+              <div class="pf-content">
+                <div class="pf-label">Office Hours</div>
+                <div class="pf-value" id="vHours"></div>
+              </div>
+            </div>
+            <div class="pf-row">
+              <div class="pf-icon">👤</div>
+              <div class="pf-content">
+                <div class="pf-label">Username</div>
+                <div class="pf-value" id="vUsername"></div>
+              </div>
+            </div>
+            <div class="pf-row">
+              <div class="pf-icon">🔘</div>
+              <div class="pf-content">
+                <div class="pf-label">Status</div>
+                <div class="pf-value"><span class="status-badge" id="vStatus"></span></div>
+              </div>
+            </div>
+
+            <div style="display:flex;gap:8px;margin-top:16px;flex-wrap:wrap;">
+              <button onclick="enterEditMode()">Edit</button>
+              <button onclick="toggleChangePw()">Change Password</button>
+              <button class="danger" onclick="confirmDelete()">Delete</button>
+            </div>
+
+            <div class="change-pw-section" id="changePwSection">
+              <h4>🔐 Change Password</h4>
+              <input type="password" id="pwCurrent" placeholder="Current password">
+              <input type="password" id="pwNew" placeholder="New password">
+              <input type="password" id="pwConfirm" placeholder="Confirm new password">
+              <div style="display:flex;gap:8px;">
+                <button class="success" onclick="savePassword()">Save Password</button>
+                <button onclick="toggleChangePw()">Cancel</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- EDIT MODE -->
+          <div id="editMode" style="display:none;">
+            <div class="section-heading">Edit Information</div>
+
+            <div class="edit-field">
+              <label>Full Name</label>
+              <input type="text" id="eName">
+            </div>
+            <div class="edit-field">
+              <label>Employee ID</label>
+              <input type="text" id="eEmpId">
+            </div>
+            <div class="edit-field">
+              <label>Email</label>
+              <input type="text" id="eEmail">
+            </div>
+            <div class="edit-field">
+              <label>Contact</label>
+              <input type="text" id="eContact">
+            </div>
+            <div class="edit-field">
+              <label>Department</label>
+              <input type="text" id="eDept">
+            </div>
+            <div class="edit-field">
+              <label>Office Location</label>
+              <input type="text" id="eOffice">
+            </div>
+            <div class="edit-field">
+              <label>Office Hours</label>
+              <input type="text" id="eHours">
+            </div>
+            <div class="edit-field">
+              <label>Username</label>
+              <input type="text" id="eUsername">
+            </div>
+            <div class="edit-field">
+              <label>Status</label>
+              <select id="eStatus">
+                <option value="Active">Active</option>
+                <option value="Inactive">Inactive</option>
+              </select>
+            </div>
+
+            <div style="display:flex;gap:8px;margin-top:14px;">
+              <button class="success" onclick="saveProfile()">Save Changes</button>
+              <button onclick="cancelEdit()">Cancel</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+
+        <div class="log-card">
+          <h3>🕐 Recent Activity Log</h3>
+          <div id="activityLog">
+            <div class="log-empty">No activity recorded yet.</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+
+var DEFAULT_PROFILE = {
+  name:     "Ms. Ana Cruz",
+  empId:    "REG-001",
+  email:    "registrar@school.com",
+  contact:  "09123456789",
+  dept:     "Registrar Office",
+  office:   "Admin Building - Room 102",
+  hours:    "8:00 AM - 5:00 PM",
+  username: "anacruz",
+  status:   "Active"
+};
+
+var profile = JSON.parse(localStorage.getItem("registrarProfile")) || DEFAULT_PROFILE;
+
+/* ===================================================
+   RENDER PROFILE — i-set lahat ng fields directly
+=================================================== */
+function renderProfile() {
+  // Header — top right ng page
+  document.getElementById("headerName").textContent = profile.name;
+
+  // Banner card
+  document.getElementById("displayName").textContent    = profile.name;
+  document.getElementById("avatarInitials").textContent = getInitials(profile.name);
+
+  // Info rows
+  document.getElementById("vEmpId").textContent    = profile.empId    || "—";
+  document.getElementById("vEmail").textContent    = profile.email    || "—";
+  document.getElementById("vContact").textContent  = profile.contact  || "—";
+  document.getElementById("vDept").textContent     = profile.dept     || "—";
+  document.getElementById("vOffice").textContent   = profile.office   || "—";
+  document.getElementById("vHours").textContent    = profile.hours    || "—";
+  document.getElementById("vUsername").textContent = profile.username || "—";
+
+  var badge = document.getElementById("vStatus");
+  badge.textContent = profile.status;
+  badge.className   = "status-badge " + (profile.status === "Active" ? "active" : "inactive");
+}
+
+function getInitials(name) {
+  return name.split(" ")
+    .filter(function(w) { return /[A-Za-z]/.test(w); })
+    .map(function(w) { return w[0]; })
+    .slice(0, 2)
+    .join("")
+    .toUpperCase();
+}
+
+/* ===================================================
+   INLINE EDIT
+=================================================== */
+function enterEditMode() {
+  document.getElementById("eName").value     = profile.name;
+  document.getElementById("eEmpId").value    = profile.empId    || "";
+  document.getElementById("eEmail").value    = profile.email    || "";
+  document.getElementById("eContact").value  = profile.contact  || "";
+  document.getElementById("eDept").value     = profile.dept     || "";
+  document.getElementById("eOffice").value   = profile.office   || "";
+  document.getElementById("eHours").value    = profile.hours    || "";
+  document.getElementById("eUsername").value = profile.username || "";
+  document.getElementById("eStatus").value   = profile.status   || "Active";
+
+  document.querySelectorAll(".edit-field").forEach(function(el) {
+    el.style.display = "flex";
+  });
+
+  document.getElementById("viewMode").style.display = "none";
+  document.getElementById("editMode").style.display = "block";
+}
+
+function cancelEdit() {
+  document.getElementById("editMode").style.display = "none";
+  document.getElementById("viewMode").style.display = "block";
+}
+
+function saveProfile() {
+  var newName = document.getElementById("eName").value.trim();
+  if (!newName) { alert("Name cannot be empty."); return; }
+
+  profile.name     = newName;
+  profile.empId    = document.getElementById("eEmpId").value.trim();
+  profile.email    = document.getElementById("eEmail").value.trim();
+  profile.contact  = document.getElementById("eContact").value.trim();
+  profile.dept     = document.getElementById("eDept").value.trim();
+  profile.office   = document.getElementById("eOffice").value.trim();
+  profile.hours    = document.getElementById("eHours").value.trim();
+  profile.username = document.getElementById("eUsername").value.trim();
+  profile.status   = document.getElementById("eStatus").value;
+
+  // Save to localStorage
+  localStorage.setItem("registrarProfile", JSON.stringify(profile));
+
+  // Update ALL parts of the page immediately
+  renderProfile();
+  cancelEdit();
+  addLog("edit", "Updated profile information");
+  alert("Profile saved successfully!");
+}
+
+/* ===================================================
+   CHANGE PASSWORD
+=================================================== */
+function toggleChangePw() {
+  var sec = document.getElementById("changePwSection");
+  if (sec.classList.contains("on")) {
+    sec.classList.remove("on");
+    document.getElementById("pwCurrent").value = "";
+    document.getElementById("pwNew").value     = "";
+    document.getElementById("pwConfirm").value = "";
+  } else {
+    sec.classList.add("on");
+  }
+}
+
+function savePassword() {
+  var curr    = document.getElementById("pwCurrent").value;
+  var nw      = document.getElementById("pwNew").value;
+  var confirm = document.getElementById("pwConfirm").value;
+
+  if (!curr || !nw || !confirm) { alert("Please fill in all password fields."); return; }
+  if (nw !== confirm)           { alert("New password and confirmation do not match."); return; }
+  if (nw.length < 6)            { alert("Password must be at least 6 characters."); return; }
+
+  localStorage.setItem("registrarPw", nw);
+  toggleChangePw();
+  addLog("pw", "Changed account password");
+  alert("Password changed successfully!");
+}
+
+/* ===================================================
+   DELETE
+=================================================== */
+function confirmDelete() {
+  if (confirm("Are you sure you want to delete this account? This cannot be undone.")) {
+    if (confirm("Final confirmation: delete account for " + profile.name + "?")) {
+      addLog("delete", "Deleted registrar account: " + profile.name);
+      localStorage.removeItem("registrarProfile");
+      alert("Account deleted.");
+      window.location.href = "login.html";
+    }
+  }
+}
+
+/* ===================================================
+   ACTIVITY LOG
+=================================================== */
+function getLogs() {
+  return JSON.parse(localStorage.getItem("activityLogs")) || [];
+}
+
+function addLog(type, action) {
+  var logs = getLogs();
+  logs.unshift({ type: type, action: action, time: new Date().toISOString() });
+  localStorage.setItem("activityLogs", JSON.stringify(logs.slice(0, 50)));
+  renderLog();
+  updateSummary();
+}
+
+function timeAgo(isoStr) {
+  var diff = Date.now() - new Date(isoStr).getTime();
+  var m = Math.floor(diff / 60000);
+  var h = Math.floor(m / 60);
+  var d = Math.floor(h / 24);
+  if (d > 0) return d + " day" + (d > 1 ? "s" : "") + " ago";
+  if (h > 0) return h + " hour" + (h > 1 ? "s" : "") + " ago";
+  if (m > 0) return m + " minute" + (m > 1 ? "s" : "") + " ago";
+  return "Just now";
+}
+
+function renderLog() {
+  var logs = getLogs();
+  var wrap = document.getElementById("activityLog");
+  if (!logs.length) {
+    wrap.innerHTML = '<div class="log-empty">No activity recorded yet.</div>';
+    return;
+  }
+  var html = "";
+  for (var i = 0; i < Math.min(logs.length, 15); i++) {
+    var l = logs[i];
+    html += '<div class="log-item">'
+          +   '<div class="log-dot ' + l.type + '"></div>'
+          +   '<div style="flex:1;">'
+          +     '<div class="log-action">' + l.action + '</div>'
+          +     '<div class="log-time">' + timeAgo(l.time) + ' &nbsp;·&nbsp; ' + new Date(l.time).toLocaleString() + '</div>'
+          +   '</div>'
+          + '</div>';
+  }
+  wrap.innerHTML = html;
+}
+
+function updateSummary() {
+  var logs = getLogs();
+  document.getElementById("sumStudents").textContent =
+    logs.filter(function(l) { return l.type === "add" && l.action.toLowerCase().indexOf("student") >= 0; }).length;
+  document.getElementById("sumEdits").textContent =
+    logs.filter(function(l) { return l.type === "edit"; }).length;
+  document.getElementById("sumDeletes").textContent =
+    logs.filter(function(l) { return l.type === "delete"; }).length;
+  document.getElementById("sumFaculty").textContent =
+    logs.filter(function(l) { return l.type === "add" && l.action.toLowerCase().indexOf("faculty") >= 0; }).length;
+  document.getElementById("sumLogins").textContent =
+    logs.filter(function(l) { return l.type === "login"; }).length;
+  document.getElementById("sumActions").textContent = logs.length;
+}
+
+/* ===================================================
+   INIT
+=================================================== */
+function logout() { window.location.href = "login.html"; }
+
+// Log login once per session
+if (!sessionStorage.getItem("profileVisited")) {
+  sessionStorage.setItem("profileVisited", "1");
+  addLog("login", "Logged in as " + profile.name);
+}
+
+// Run on load
+renderProfile();
+renderLog();
+updateSummary();
+
+// Auto-refresh every 10s for cross-tab changes
+setInterval(function() { renderLog(); updateSummary(); }, 10000);
+window.addEventListener("storage", function() { renderLog(); updateSummary(); });
+</script>
+</body>
+</html>

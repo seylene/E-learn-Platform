@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Registrar Reports</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="header">
+  <div class="logo"><img src="images/logo.png" class="logo-img"><small>Digital Academic Operating System</small></div>
+  <div class="user-info">Registrar | Ms. Ana Cruz <button class="logout-btn" onclick="logout()">Logout</button></div>
+</div>
+<div class="container">
+  <div class="sidebar">
+    <h4>REGISTRAR</h4>
+    <a href="registrar_profile.html">My Profile</a>
+    <a href="registrar_dashboard.html">Dashboard</a>
+    <a href="registrar_students.html">Student Records</a>
+    <a href="registrar_faculty.html">Faculty Records</a>
+    <a href="registrar_grades.html">Grade Evaluation</a>
+    <h4 style="margin-top:16px;font-size:10px;letter-spacing:1px;opacity:.7;">MANAGEMENT</h4>
+    <a href="registrar_college.html">Colleges</a>
+    <a href="registrar_course.html">Courses</a>
+    <a href="registrar_subject.html">Subjects</a>
+    <a href="registrar_yearlevel.html">Year Levels</a>
+    <a href="registrar_semester.html">Semesters</a>
+    <a href="registrar_section.html">Sections</a>
+    <a href="registrar_academic.html">Academic Year</a>
+    <h4 style="margin-top:16px;font-size:10px;letter-spacing:1px;opacity:.7;">RECORDS</h4>
+    <a href="registrar_parents.html">Parents</a>
+    <a href="registrar_employees.html">Employees</a>
+    <a href="registrar_admission.html">Admission</a>
+    <h4 style="margin-top:16px;font-size:10px;letter-spacing:1px;opacity:.7;">OTHERS</h4>
+    <a href="registrar_reports.html" class="active">Reports</a>
+    <a href="registrar_logs.html">User Logs</a>
+    <a href="registrar_roles.html">Roles & Permissions</a>
+  </div>
+  <div class="content">
+    <h2>Registrar Reports</h2>
+    <p class="subtitle">Generate and export reports from the system.</p>
+    <div class="report-grid">
+      <div class="report-card">
+        <div class="rc-icon">👥</div>
+        <div class="rc-title">Enrollment Report</div>
+        <div class="rc-desc">List of all enrolled students by course, year level, and semester.</div>
+        <button class="rc-btn" onclick="generateReport('enrollment')">📊 Generate Report</button>
+      </div>
+      <div class="report-card">
+        <div class="rc-icon">📝</div>
+        <div class="rc-title">Grade Report</div>
+        <div class="rc-desc">Summary of student grades and GWA per semester.</div>
+        <button class="rc-btn" onclick="generateReport('grades')">📊 Generate Report</button>
+      </div>
+      <div class="report-card">
+        <div class="rc-icon">📋</div>
+        <div class="rc-title">Admission Report</div>
+        <div class="rc-desc">Status of applicants — pending, accepted, rejected, enrolled.</div>
+        <button class="rc-btn" onclick="generateReport('admission')">📊 Generate Report</button>
+      </div>
+      <div class="report-card">
+        <div class="rc-icon">👨‍🏫</div>
+        <div class="rc-title">Faculty Load Report</div>
+        <div class="rc-desc">Faculty teaching load and subject assignments.</div>
+        <button class="rc-btn" onclick="generateReport('faculty')">📊 Generate Report</button>
+      </div>
+      <div class="report-card">
+        <div class="rc-icon">✅</div>
+        <div class="rc-title">Requirements Report</div>
+        <div class="rc-desc">Students with pending or complete submission of requirements.</div>
+        <button class="rc-btn" onclick="generateReport('requirements')">📊 Generate Report</button>
+      </div>
+      <div class="report-card">
+        <div class="rc-icon">📋</div>
+        <div class="rc-title">Subjects Report</div>
+        <div class="rc-desc">Master list of all subjects with units, type, and course.</div>
+        <button class="rc-btn" onclick="generateReport('subjects')">📊 Generate Report</button>
+      </div>
+    </div>
+    <div class="report-preview" id="reportPreview" style="display:none;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+        <h3 id="reportTitle">Report</h3>
+        <div style="display:flex;gap:8px;">
+          <button onclick="window.print()" style="background:#374151;">🖨️ Print</button>
+          <button onclick="document.getElementById('reportPreview').style.display='none'">✕ Close</button>
+        </div>
+      </div>
+      <div id="reportBody"></div>
+    </div>
+  </div>
+</div>
+<script>
+function generateReport(type){
+  const students   = JSON.parse(localStorage.getItem("students"))   || [];
+  const faculty    = JSON.parse(localStorage.getItem("faculty"))    || [];
+  const admissions = JSON.parse(localStorage.getItem("admissions")) || [];
+  const gradeData  = JSON.parse(localStorage.getItem("gradeData"))  || {};
+  const subjects   = JSON.parse(localStorage.getItem("masterSubjects")) || [];
+  const enrolled   = students.filter(s=>s.enrolled);
+  let title="", html="";
+
+  if(type==="enrollment"){
+    title = "Enrollment Report";
+    html = `<table class="report-table"><thead><tr><th>Student ID</th><th>Full Name</th><th>Course</th><th>Year</th><th>Subjects</th></tr></thead><tbody>
+    ${enrolled.length ? enrolled.map(s=>`<tr><td>${s.studentId}</td><td>${s.fullName}</td><td>${s.course}</td><td>${s.yearLevel}th</td><td>${(s.subjects||[]).length}</td></tr>`).join("") : `<tr><td colspan="5" class="empty-note">No enrolled students.</td></tr>`}
+    </tbody></table><p style="font-size:12px;color:#6b7280;margin-top:10px;">Total: ${enrolled.length} student(s)</p>`;
+  }
+  else if(type==="grades"){
+    title = "Grade Summary Report";
+    html = `<table class="report-table"><thead><tr><th>Student ID</th><th>Full Name</th><th>Course</th><th>Subjects Graded</th><th>GWA</th></tr></thead><tbody>
+    ${enrolled.length ? enrolled.map(s=>{
+      const sg = gradeData[s.studentId]||{};
+      const graded = Object.keys(sg).length;
+      const gwaArr = Object.values(sg).map(g=>parseFloat(g.grade)).filter(n=>!isNaN(n)&&n<=5);
+      const gwa = gwaArr.length ? (gwaArr.reduce((a,b)=>a+b,0)/gwaArr.length).toFixed(2) : "—";
+      return `<tr><td>${s.studentId}</td><td>${s.fullName}</td><td>${s.course}</td><td>${graded}</td><td style="font-weight:700;">${gwa}</td></tr>`;
+    }).join("") : `<tr><td colspan="5" class="empty-note">No data.</td></tr>`}
+    </tbody></table>`;
+  }
+  else if(type==="admission"){
+    title = "Admission Report";
+    html = `<table class="report-table"><thead><tr><th>Name</th><th>Course</th><th>School</th><th>Date Applied</th><th>Status</th></tr></thead><tbody>
+    ${admissions.length ? admissions.map(a=>`<tr><td>${a.name}</td><td>${a.course||'—'}</td><td>${a.school||'—'}</td><td>${a.dateApplied||'—'}</td><td>${a.status||'Pending'}</td></tr>`).join("") : `<tr><td colspan="5" class="empty-note">No applicants.</td></tr>`}
+    </tbody></table><p style="font-size:12px;color:#6b7280;margin-top:10px;">Total: ${admissions.length} applicant(s)</p>`;
+  }
+  else if(type==="faculty"){
+    title = "Faculty Load Report";
+    html = `<table class="report-table"><thead><tr><th>Faculty Name</th><th>Department</th><th>Subjects</th><th>Total Units</th><th>Max Load</th></tr></thead><tbody>
+    ${faculty.length ? faculty.map(f=>{
+      const units = (f.schedules||[]).reduce((a,s)=>a+(parseInt(s.units)||0),0);
+      return `<tr><td>${f.name}</td><td>${f.department||'—'}</td><td>${(f.schedules||[]).length}</td><td style="font-weight:700;${units>(parseInt(f.maxLoad)||0)?'color:#dc2626;':''}">${units}</td><td>${f.maxLoad||'?'}</td></tr>`;
+    }).join("") : `<tr><td colspan="5" class="empty-note">No faculty records.</td></tr>`}
+    </tbody></table>`;
+  }
+  else if(type==="requirements"){
+    title = "Requirements Status Report";
+    const reqKeys = {form137:"Form 137",goodMoral:"Good Moral",birth:"Birth Certificate",picture:"2x2 Photo",medical:"Medical Cert"};
+    html = `<table class="report-table"><thead><tr><th>Student</th>${Object.values(reqKeys).map(r=>`<th>${r}</th>`).join("")}</tr></thead><tbody>
+    ${enrolled.length ? enrolled.map(s=>`<tr><td>${s.fullName}</td>${Object.keys(reqKeys).map(k=>`<td style="text-align:center;">${(s.requirements&&s.requirements[k])?"✅":"❌"}</td>`).join("")}</tr>`).join("") : `<tr><td colspan="7" class="empty-note">No students.</td></tr>`}
+    </tbody></table>`;
+  }
+  else if(type==="subjects"){
+    title = "Master Subject List";
+    html = `<table class="report-table"><thead><tr><th>Subject Name</th><th>Code</th><th>Units</th><th>Type</th><th>Course</th></tr></thead><tbody>
+    ${subjects.length ? subjects.map(s=>`<tr><td>${s.name}</td><td>${s.code||'—'}</td><td>${s.units||0}</td><td>${s.type||'—'}</td><td>${s.course||'—'}</td></tr>`).join("") : `<tr><td colspan="5" class="empty-note">No subjects.</td></tr>`}
+    </tbody></table>`;
+  }
+
+  document.getElementById("reportTitle").textContent = title;
+  document.getElementById("reportBody").innerHTML = html;
+  document.getElementById("reportPreview").style.display = "block";
+  document.getElementById("reportPreview").scrollIntoView({behavior:"smooth"});
+}
+function logout(){ window.location.href="login.html"; }
+</script>
+</body>
+</html>

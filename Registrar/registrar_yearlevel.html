@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Year Level Management</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="header">
+  <div class="logo"><img src="images/logo.png" class="logo-img"><small>Digital Academic Operating System</small></div>
+  <div class="user-info">Registrar | Ms. Ana Cruz <button class="logout-btn" onclick="logout()">Logout</button></div>
+</div>
+<div class="container">
+  <div class="sidebar">
+    <h4>REGISTRAR</h4>
+    <a href="registrar_profile.html">My Profile</a>
+    <a href="registrar_dashboard.html">Dashboard</a>
+    <a href="registrar_students.html">Student Records</a>
+    <a href="registrar_faculty.html">Faculty Records</a>
+    <a href="registrar_grades.html">Grade Evaluation</a>
+    <h4 style="margin-top:16px;font-size:10px;letter-spacing:1px;opacity:.7;">MANAGEMENT</h4>
+    <a href="registrar_college.html">Colleges</a>
+    <a href="registrar_course.html">Courses</a>
+    <a href="registrar_subject.html">Subjects</a>
+    <a href="registrar_yearlevel.html" class="active">Year Levels</a>
+    <a href="registrar_semester.html">Semesters</a>
+    <a href="registrar_section.html">Sections</a>
+    <a href="registrar_academic.html">Academic Year</a>
+    <h4 style="margin-top:16px;font-size:10px;letter-spacing:1px;opacity:.7;">RECORDS</h4>
+    <a href="registrar_parents.html">Parents</a>
+    <a href="registrar_employees.html">Employees</a>
+    <a href="registrar_admission.html">Admission</a>
+    <h4 style="margin-top:16px;font-size:10px;letter-spacing:1px;opacity:.7;">OTHERS</h4>
+    <a href="registrar_reports.html">Reports</a>
+    <a href="registrar_logs.html">User Logs</a>
+    <a href="registrar_roles.html">Roles & Permissions</a>
+  </div>
+  <div class="content">
+    <h2>Year Level Management</h2>
+    <button class="add-btn" onclick="openModal()">+ Add Year Level</button>
+    <table>
+      <thead><tr><th>Level</th><th>Label</th><th>Description</th><th>Students</th><th>Actions</th></tr></thead>
+      <tbody id="ylTable"></tbody>
+    </table>
+  </div>
+</div>
+
+<div id="modal" class="modal">
+  <div class="modal-content" style="width:420px;">
+    <h3 id="modalTitle">Add Year Level</h3>
+    <input type="hidden" id="editIndex">
+    <div class="modal-section">
+      <div class="modal-section-title">Year Level Information</div>
+      <div class="form-row col2">
+        <div class="field"><label>Level Number</label><input type="number" id="ylNum" placeholder="e.g. 1" min="1"></div>
+        <div class="field"><label>Label</label><input type="text" id="ylLabel" placeholder="e.g. 1st Year"></div>
+      </div>
+      <div class="form-row">
+        <div class="field"><label>Description</label><input type="text" id="ylDesc" placeholder="e.g. Freshman year"></div>
+      </div>
+    </div>
+    <button class="enroll-btn" onclick="saveYL()">Save</button>
+    <button class="danger enroll-btn" onclick="closeModal()" style="margin-top:8px;">Cancel</button>
+  </div>
+</div>
+
+<script>
+const DEFAULT_YL = [
+  {num:1,label:"1st Year",desc:"Freshman"},
+  {num:2,label:"2nd Year",desc:"Sophomore"},
+  {num:3,label:"3rd Year",desc:"Junior"},
+  {num:4,label:"4th Year",desc:"Senior"},
+];
+let yearLevels = JSON.parse(localStorage.getItem("yearLevels")) || DEFAULT_YL;
+
+function render(){
+  const students = JSON.parse(localStorage.getItem("students"))||[];
+  const tbody = document.getElementById("ylTable");
+  if(!yearLevels.length){ tbody.innerHTML=`<tr><td colspan="5" class="empty-note">No year levels yet.</td></tr>`; return; }
+  tbody.innerHTML = yearLevels.map((y,i)=>{
+    const count = students.filter(s=>s.enrolled && parseInt(s.yearLevel)===parseInt(y.num)).length;
+    return `<tr>
+      <td><span style="background:#eef2ff;color:#2f4cff;font-weight:800;font-size:18px;padding:4px 14px;border-radius:8px;">${y.num}</span></td>
+      <td><strong>${y.label}</strong></td>
+      <td style="color:#6b7280;font-size:13px;">${y.desc||'—'}</td>
+      <td><span style="background:#f0fdf4;color:#16a34a;font-weight:700;padding:2px 10px;border-radius:20px;font-size:12px;">${count} student${count!==1?'s':''}</span></td>
+      <td>
+        <button onclick="editYL(${i})">Edit</button>
+        <button class="danger" onclick="deleteYL(${i})">Delete</button>
+      </td>
+    </tr>`;
+  }).join("");
+}
+
+function openModal(){ clearForm(); document.getElementById("modalTitle").textContent="Add Year Level"; document.getElementById("modal").style.display="flex"; }
+function closeModal(){ document.getElementById("modal").style.display="none"; }
+function clearForm(){ ["ylNum","ylLabel","ylDesc"].forEach(id=>document.getElementById(id).value=""); document.getElementById("editIndex").value=""; }
+
+function saveYL(){
+  const num = document.getElementById("ylNum").value;
+  if(!num){ alert("Level number is required."); return; }
+  const data = { num:parseInt(num), label:document.getElementById("ylLabel").value.trim()||`${num}th Year`, desc:document.getElementById("ylDesc").value.trim() };
+  const idx = document.getElementById("editIndex").value;
+  if(idx==="") yearLevels.push(data); else yearLevels[parseInt(idx)]=data;
+  yearLevels.sort((a,b)=>a.num-b.num);
+  localStorage.setItem("yearLevels", JSON.stringify(yearLevels));
+  closeModal(); render();
+}
+
+function editYL(i){
+  const y = yearLevels[i];
+  document.getElementById("modalTitle").textContent="Edit Year Level";
+  document.getElementById("editIndex").value=i;
+  document.getElementById("ylNum").value   = y.num;
+  document.getElementById("ylLabel").value = y.label;
+  document.getElementById("ylDesc").value  = y.desc||"";
+  document.getElementById("modal").style.display="flex";
+}
+
+function deleteYL(i){ if(confirm("Delete this year level?")){ yearLevels.splice(i,1); localStorage.setItem("yearLevels",JSON.stringify(yearLevels)); render(); } }
+function logout(){ window.location.href="login.html"; }
+document.getElementById("modal").addEventListener("click",function(e){ if(e.target===this) closeModal(); });
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Employee Records</title>
+<link rel="stylesheet" href="css/style.css">
+<body>
+<div class="header">
+  <div class="logo"><img src="images/logo.png" class="logo-img"><small>Digital Academic Operating System</small></div>
+  <div class="user-info">Registrar | Ms. Ana Cruz <button class="logout-btn" onclick="logout()">Logout</button></div>
+</div>
+<div class="container">
+  <div class="sidebar">
+    <h4>REGISTRAR</h4>
+    <a href="registrar_profile.html">My Profile</a>
+    <a href="registrar_dashboard.html">Dashboard</a>
+    <a href="registrar_students.html">Student Records</a>
+    <a href="registrar_faculty.html">Faculty Records</a>
+    <a href="registrar_grades.html">Grade Evaluation</a>
+    <h4 style="margin-top:16px;font-size:10px;letter-spacing:1px;opacity:.7;">MANAGEMENT</h4>
+    <a href="registrar_college.html">Colleges</a>
+    <a href="registrar_course.html">Courses</a>
+    <a href="registrar_subject.html">Subjects</a>
+    <a href="registrar_yearlevel.html">Year Levels</a>
+    <a href="registrar_semester.html">Semesters</a>
+    <a href="registrar_section.html">Sections</a>
+    <a href="registrar_academic.html">Academic Year</a>
+    <h4 style="margin-top:16px;font-size:10px;letter-spacing:1px;opacity:.7;">RECORDS</h4>
+    <a href="registrar_parents.html">Parents</a>
+    <a href="registrar_employees.html" class="active">Employees</a>
+    <a href="registrar_admission.html">Admission</a>
+    <h4 style="margin-top:16px;font-size:10px;letter-spacing:1px;opacity:.7;">OTHERS</h4>
+    <a href="registrar_reports.html">Reports</a>
+    <a href="registrar_logs.html">User Logs</a>
+    <a href="registrar_roles.html">Roles & Permissions</a>
+  </div>
+  <div class="content">
+    <h2>Employee Records</h2>
+    <button class="add-btn" onclick="openModal()">+ Add Employee</button>
+    <div class="mgmt-stats">
+      <div class="mgmt-stat"><span class="si">🧑‍💼</span><div><div class="sl">Total Employees</div><div class="sv" id="statTotal">0</div></div></div>
+      <div class="mgmt-stat"><span class="si">✅</span><div><div class="sl">Active</div><div class="sv" id="statActive">0</div></div></div>
+      <div class="mgmt-stat"><span class="si">🏢</span><div><div class="sl">Departments</div><div class="sv" id="statDept">0</div></div></div>
+    </div>
+    <div class="search-bar">
+      <input type="text" id="searchInput" placeholder="🔍 Search employee..." oninput="render()">
+      <select id="filterDept" onchange="render()"><option value="">All Departments</option></select>
+      <select id="filterStatus" onchange="render()">
+        <option value="">All Status</option>
+        <option value="Active">Active</option>
+        <option value="Inactive">Inactive</option>
+        <option value="On Leave">On Leave</option>
+      </select>
+    </div>
+    <table>
+      <thead><tr><th>Name</th><th>Employee ID</th><th>Position</th><th>Department</th><th>Contact</th><th>Status</th><th>Actions</th></tr></thead>
+      <tbody id="empTable"></tbody>
+    </table>
+  </div>
+</div>
+
+<div id="modal" class="modal">
+  <div class="modal-content" style="width:560px;">
+    <h3 id="modalTitle">Add Employee</h3>
+    <input type="hidden" id="editIndex">
+    <div class="modal-section">
+      <div class="modal-section-title">Personal Information</div>
+      <div class="form-row col2">
+        <div class="field"><label>Full Name</label><input type="text" id="eName" placeholder="e.g. Juan Dela Cruz"></div>
+        <div class="field"><label>Employee ID</label><input type="text" id="eId" placeholder="e.g. EMP-001"></div>
+      </div>
+      <div class="form-row col2">
+        <div class="field"><label>Position</label><input type="text" id="ePosition" placeholder="e.g. Administrative Staff"></div>
+        <div class="field"><label>Department</label><input type="text" id="eDept" placeholder="e.g. Registrar's Office"></div>
+      </div>
+      <div class="form-row col2">
+        <div class="field"><label>Contact Number</label><input type="text" id="eContact" placeholder="09XX-XXX-XXXX"></div>
+        <div class="field"><label>Email</label><input type="text" id="eEmail" placeholder="e.g. juan@school.edu"></div>
+      </div>
+      <div class="form-row col2">
+        <div class="field"><label>Date Hired</label><input type="date" id="eHired"></div>
+        <div class="field"><label>Status</label>
+          <select id="eStatus">
+            <option>Active</option>
+            <option>Inactive</option>
+            <option>On Leave</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="field"><label>Address</label><input type="text" id="eAddress" placeholder="Complete address"></div>
+      </div>
+    </div>
+    <button class="enroll-btn" onclick="saveEmployee()">Save Employee</button>
+    <button class="danger enroll-btn" onclick="closeModal()" style="margin-top:8px;">Cancel</button>
+  </div>
+</div>
+
+<div id="viewModal" class="modal">
+  <div class="modal-content view-modal">
+    <h3>Employee Record</h3>
+    <div id="viewContent"></div>
+    <button class="danger" onclick="closeView()" style="margin-top:14px;">Close</button>
+  </div>
+</div>
+
+<script>
+let employees = JSON.parse(localStorage.getItem("employees")) || [];
+
+function populateDepts(){
+  const depts = [...new Set(employees.map(e=>e.dept).filter(Boolean))];
+  const filt  = document.getElementById("filterDept");
+  filt.innerHTML = `<option value="">All Departments</option>` + depts.map(d=>`<option>${d}</option>`).join("");
+}
+
+function render(){
+  document.getElementById("statTotal").textContent  = employees.length;
+  document.getElementById("statActive").textContent = employees.filter(e=>e.status==="Active").length;
+  document.getElementById("statDept").textContent   = new Set(employees.map(e=>e.dept).filter(Boolean)).size;
+
+  const search = document.getElementById("searchInput").value.toLowerCase();
+  const dept   = document.getElementById("filterDept").value;
+  const status = document.getElementById("filterStatus").value;
+  const filtered = employees.map((e,i)=>({...e,_idx:i})).filter(e=>{
+    if(search && !e.name.toLowerCase().includes(search) && !(e.eid||"").toLowerCase().includes(search)) return false;
+    if(dept   && e.dept!==dept)     return false;
+    if(status && e.status!==status) return false;
+    return true;
+  });
+
+  const statusBadge = s => {
+    const cls = s==="Active"?"background:#dcfce7;color:#16a34a;":s==="On Leave"?"background:#fef9c3;color:#a16207;":"background:#f3f4f6;color:#6b7280;";
+    return `<span style="${cls}font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;">${s||'Active'}</span>`;
+  };
+
+  const tbody = document.getElementById("empTable");
+  if(!filtered.length){ tbody.innerHTML=`<tr><td colspan="7" class="empty-note">No employees found.</td></tr>`; return; }
+  tbody.innerHTML = filtered.map(e=>`
+    <tr>
+      <td><strong>${e.name}</strong></td>
+      <td style="font-size:12px;font-weight:700;color:#2f4cff;">${e.eid||'—'}</td>
+      <td style="font-size:12px;">${e.position||'—'}</td>
+      <td><span style="background:#eef2ff;color:#2f4cff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;">${e.dept||'—'}</span></td>
+      <td style="font-size:12px;">${e.contact||'—'}</td>
+      <td>${statusBadge(e.status)}</td>
+      <td>
+        <button onclick="viewEmployee(${e._idx})">View</button>
+        <button onclick="editEmployee(${e._idx})">Edit</button>
+        <button class="danger" onclick="deleteEmployee(${e._idx})">Delete</button>
+      </td>
+    </tr>`).join("");
+}
+
+function openModal(){ clearForm(); document.getElementById("modalTitle").textContent="Add Employee"; document.getElementById("modal").style.display="flex"; }
+function closeModal(){ document.getElementById("modal").style.display="none"; }
+function closeView(){ document.getElementById("viewModal").style.display="none"; }
+function clearForm(){ ["eName","eId","ePosition","eDept","eContact","eEmail","eHired","eAddress"].forEach(id=>document.getElementById(id).value=""); document.getElementById("eStatus").value="Active"; document.getElementById("editIndex").value=""; }
+
+function saveEmployee(){
+  const name = document.getElementById("eName").value.trim();
+  if(!name){ alert("Name is required."); return; }
+  const data = { name, eid:document.getElementById("eId").value.trim(), position:document.getElementById("ePosition").value.trim(), dept:document.getElementById("eDept").value.trim(), contact:document.getElementById("eContact").value.trim(), email:document.getElementById("eEmail").value.trim(), hired:document.getElementById("eHired").value, status:document.getElementById("eStatus").value, address:document.getElementById("eAddress").value.trim() };
+  const idx = document.getElementById("editIndex").value;
+  if(idx==="") employees.push(data); else employees[parseInt(idx)]=data;
+  localStorage.setItem("employees", JSON.stringify(employees));
+  populateDepts(); closeModal(); render();
+}
+
+function editEmployee(i){
+  const e = employees[i];
+  document.getElementById("modalTitle").textContent="Edit Employee";
+  document.getElementById("editIndex").value=i;
+  document.getElementById("eName").value     = e.name;
+  document.getElementById("eId").value       = e.eid||"";
+  document.getElementById("ePosition").value = e.position||"";
+  document.getElementById("eDept").value     = e.dept||"";
+  document.getElementById("eContact").value  = e.contact||"";
+  document.getElementById("eEmail").value    = e.email||"";
+  document.getElementById("eHired").value    = e.hired||"";
+  document.getElementById("eStatus").value   = e.status||"Active";
+  document.getElementById("eAddress").value  = e.address||"";
+  document.getElementById("modal").style.display="flex";
+}
+
+function viewEmployee(i){
+  const e = employees[i];
+  document.getElementById("viewContent").innerHTML = `
+    <div class="view-section">
+      <div class="view-section-title">Employee Information</div>
+      <div class="info-grid">
+        <div class="info-item"><span class="lbl">Full Name</span><span class="val">${e.name}</span></div>
+        <div class="info-item"><span class="lbl">Employee ID</span><span class="val">${e.eid||'—'}</span></div>
+        <div class="info-item"><span class="lbl">Position</span><span class="val">${e.position||'—'}</span></div>
+        <div class="info-item"><span class="lbl">Department</span><span class="val">${e.dept||'—'}</span></div>
+        <div class="info-item"><span class="lbl">Contact</span><span class="val">${e.contact||'—'}</span></div>
+        <div class="info-item"><span class="lbl">Email</span><span class="val">${e.email||'—'}</span></div>
+        <div class="info-item"><span class="lbl">Date Hired</span><span class="val">${e.hired||'—'}</span></div>
+        <div class="info-item"><span class="lbl">Status</span><span class="val">${e.status||'Active'}</span></div>
+        <div class="info-item" style="grid-column:1/-1;"><span class="lbl">Address</span><span class="val">${e.address||'—'}</span></div>
+      </div>
+    </div>`;
+  document.getElementById("viewModal").style.display="flex";
+}
+
+function deleteEmployee(i){ if(confirm("Delete this employee?")){ employees.splice(i,1); localStorage.setItem("employees",JSON.stringify(employees)); populateDepts(); render(); } }
+function logout(){ window.location.href="login.html"; }
+document.getElementById("modal").addEventListener("click",function(e){ if(e.target===this) closeModal(); });
+document.getElementById("viewModal").addEventListener("click",function(e){ if(e.target===this) closeView(); });
+render();
+</script>
+</body>
+</html>

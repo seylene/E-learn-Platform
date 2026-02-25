@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Parent Records</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="header">
+  <div class="logo"><img src="images/logo.png" class="logo-img"><small>Digital Academic Operating System</small></div>
+  <div class="user-info">Registrar | Ms. Ana Cruz <button class="logout-btn" onclick="logout()">Logout</button></div>
+</div>
+<div class="container">
+  <div class="sidebar">
+    <h4>REGISTRAR</h4>
+    <a href="registrar_profile.html">My Profile</a>
+    <a href="registrar_dashboard.html">Dashboard</a>
+    <a href="registrar_students.html">Student Records</a>
+    <a href="registrar_faculty.html">Faculty Records</a>
+    <a href="registrar_grades.html">Grade Evaluation</a>
+    <h4 style="margin-top:16px;font-size:10px;letter-spacing:1px;opacity:.7;">MANAGEMENT</h4>
+    <a href="registrar_college.html">Colleges</a>
+    <a href="registrar_course.html">Courses</a>
+    <a href="registrar_subject.html">Subjects</a>
+    <a href="registrar_yearlevel.html">Year Levels</a>
+    <a href="registrar_semester.html">Semesters</a>
+    <a href="registrar_section.html">Sections</a>
+    <a href="registrar_academic.html">Academic Year</a>
+    <h4 style="margin-top:16px;font-size:10px;letter-spacing:1px;opacity:.7;">RECORDS</h4>
+    <a href="registrar_parents.html" class="active">Parents</a>
+    <a href="registrar_employees.html">Employees</a>
+    <a href="registrar_admission.html">Admission</a>
+    <h4 style="margin-top:16px;font-size:10px;letter-spacing:1px;opacity:.7;">OTHERS</h4>
+    <a href="registrar_reports.html">Reports</a>
+    <a href="registrar_logs.html">User Logs</a>
+    <a href="registrar_roles.html">Roles & Permissions</a>
+  </div>
+  <div class="content">
+    <h2>Parent Records</h2>
+    <button class="add-btn" onclick="openModal()">+ Add Parent</button>
+    <div class="mgmt-stats">
+      <div class="mgmt-stat"><span class="si">👨‍👩‍👧</span><div><div class="sl">Total Parents</div><div class="sv" id="statTotal">0</div></div></div>
+      <div class="mgmt-stat"><span class="si">🔗</span><div><div class="sl">Linked to Students</div><div class="sv" id="statLinked">0</div></div></div>
+      <div class="mgmt-stat"><span class="si">📞</span><div><div class="sl">With Contact</div><div class="sv" id="statContact">0</div></div></div>
+    </div>
+    <div class="search-bar">
+      <input type="text" id="searchInput" placeholder="🔍 Search parent..." oninput="render()">
+    </div>
+    <table>
+      <thead><tr><th>Name</th><th>Relationship</th><th>Contact</th><th>Email</th><th>Student/s</th><th>Actions</th></tr></thead>
+      <tbody id="parentTable"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ADD/EDIT MODAL -->
+<div id="modal" class="modal">
+  <div class="modal-content" style="width:540px;">
+    <h3 id="modalTitle">Add Parent</h3>
+    <input type="hidden" id="editIndex">
+    <div class="modal-section">
+      <div class="modal-section-title">Personal Information</div>
+      <div class="form-row col2">
+        <div class="field"><label>Full Name</label><input type="text" id="pName" placeholder="e.g. Maria Santos"></div>
+        <div class="field"><label>Relationship</label>
+          <select id="pRelation">
+            <option>Father</option><option>Mother</option><option>Guardian</option><option>Other</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row col2">
+        <div class="field"><label>Contact Number</label><input type="text" id="pContact" placeholder="09XX-XXX-XXXX"></div>
+        <div class="field"><label>Email</label><input type="text" id="pEmail" placeholder="e.g. msantos@email.com"></div>
+      </div>
+      <div class="form-row col2">
+        <div class="field"><label>Occupation</label><input type="text" id="pOccupation" placeholder="e.g. Engineer"></div>
+        <div class="field"><label>Monthly Income</label><input type="text" id="pIncome" placeholder="e.g. 25,000"></div>
+      </div>
+      <div class="form-row">
+        <div class="field"><label>Address</label><input type="text" id="pAddress" placeholder="Complete address"></div>
+      </div>
+    </div>
+    <div class="modal-section">
+      <div class="modal-section-title">Linked Student/s</div>
+      <div class="form-row">
+        <div class="field">
+          <label>Student</label>
+          <select id="pStudent"><option value="">-- Select Student --</option></select>
+        </div>
+      </div>
+    </div>
+    <button class="enroll-btn" onclick="saveParent()">Save Parent</button>
+    <button class="danger enroll-btn" onclick="closeModal()" style="margin-top:8px;">Cancel</button>
+  </div>
+</div>
+
+<!-- VIEW MODAL -->
+<div id="viewModal" class="modal">
+  <div class="modal-content view-modal">
+    <h3>Parent Record</h3>
+    <div id="viewContent"></div>
+    <button class="danger" onclick="closeView()" style="margin-top:14px;">Close</button>
+  </div>
+</div>
+
+<script>
+let parents = JSON.parse(localStorage.getItem("parents")) || [];
+
+function populateStudents(){
+  const students = JSON.parse(localStorage.getItem("students"))||[];
+  const sel = document.getElementById("pStudent");
+  sel.innerHTML = `<option value="">-- Select Student --</option>` + students.filter(s=>s.enrolled).map(s=>`<option value="${s.studentId}">${s.fullName} (${s.studentId})</option>`).join("");
+}
+
+function render(){
+  const search = document.getElementById("searchInput").value.toLowerCase();
+  const filtered = parents.map((p,i)=>({...p,_idx:i})).filter(p=>!search||p.name.toLowerCase().includes(search)||(p.studentName||"").toLowerCase().includes(search));
+
+  document.getElementById("statTotal").textContent   = parents.length;
+  document.getElementById("statLinked").textContent  = parents.filter(p=>p.studentId).length;
+  document.getElementById("statContact").textContent = parents.filter(p=>p.contact).length;
+
+  const tbody = document.getElementById("parentTable");
+  if(!filtered.length){ tbody.innerHTML=`<tr><td colspan="6" class="empty-note">No parents found.</td></tr>`; return; }
+  tbody.innerHTML = filtered.map(p=>`
+    <tr>
+      <td>
+        <strong>${p.name}</strong>
+        <div style="font-size:11px;color:#6b7280;">${p.occupation||''}</div>
+      </td>
+      <td><span style="background:#eef2ff;color:#2f4cff;font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px;">${p.relation||'Guardian'}</span></td>
+      <td style="font-size:12px;">${p.contact||'—'}</td>
+      <td style="font-size:12px;">${p.email||'—'}</td>
+      <td style="font-size:12px;">${p.studentName||'<span style="color:#9ca3af;">Not linked</span>'}</td>
+      <td>
+        <button onclick="viewParent(${p._idx})">View</button>
+        <button onclick="editParent(${p._idx})">Edit</button>
+        <button class="danger" onclick="deleteParent(${p._idx})">Delete</button>
+      </td>
+    </tr>`).join("");
+}
+
+function openModal(){ clearForm(); document.getElementById("modalTitle").textContent="Add Parent"; document.getElementById("modal").style.display="flex"; }
+function closeModal(){ document.getElementById("modal").style.display="none"; }
+function closeView(){ document.getElementById("viewModal").style.display="none"; }
+function clearForm(){ ["pName","pContact","pEmail","pOccupation","pIncome","pAddress"].forEach(id=>document.getElementById(id).value=""); document.getElementById("pRelation").value="Father"; document.getElementById("pStudent").value=""; document.getElementById("editIndex").value=""; }
+
+function saveParent(){
+  const name = document.getElementById("pName").value.trim();
+  if(!name){ alert("Name is required."); return; }
+  const students = JSON.parse(localStorage.getItem("students"))||[];
+  const sid = document.getElementById("pStudent").value;
+  const stu = students.find(s=>s.studentId===sid);
+  const data = { name, relation:document.getElementById("pRelation").value, contact:document.getElementById("pContact").value.trim(), email:document.getElementById("pEmail").value.trim(), occupation:document.getElementById("pOccupation").value.trim(), income:document.getElementById("pIncome").value.trim(), address:document.getElementById("pAddress").value.trim(), studentId:sid, studentName:stu?stu.fullName:"" };
+  const idx = document.getElementById("editIndex").value;
+  if(idx==="") parents.push(data); else parents[parseInt(idx)]=data;
+  localStorage.setItem("parents", JSON.stringify(parents));
+  closeModal(); render();
+}
+
+function editParent(i){
+  const p = parents[i];
+  document.getElementById("modalTitle").textContent="Edit Parent";
+  document.getElementById("editIndex").value=i;
+  document.getElementById("pName").value       = p.name;
+  document.getElementById("pRelation").value   = p.relation||"Father";
+  document.getElementById("pContact").value    = p.contact||"";
+  document.getElementById("pEmail").value      = p.email||"";
+  document.getElementById("pOccupation").value = p.occupation||"";
+  document.getElementById("pIncome").value     = p.income||"";
+  document.getElementById("pAddress").value    = p.address||"";
+  document.getElementById("pStudent").value    = p.studentId||"";
+  document.getElementById("modal").style.display="flex";
+}
+
+function viewParent(i){
+  const p = parents[i];
+  document.getElementById("viewContent").innerHTML = `
+    <div class="view-section">
+      <div class="view-section-title">Personal Information</div>
+      <div class="info-grid">
+        <div class="info-item"><span class="lbl">Full Name</span><span class="val">${p.name}</span></div>
+        <div class="info-item"><span class="lbl">Relationship</span><span class="val">${p.relation||'—'}</span></div>
+        <div class="info-item"><span class="lbl">Contact</span><span class="val">${p.contact||'—'}</span></div>
+        <div class="info-item"><span class="lbl">Email</span><span class="val">${p.email||'—'}</span></div>
+        <div class="info-item"><span class="lbl">Occupation</span><span class="val">${p.occupation||'—'}</span></div>
+        <div class="info-item"><span class="lbl">Monthly Income</span><span class="val">${p.income||'—'}</span></div>
+        <div class="info-item" style="grid-column:1/-1;"><span class="lbl">Address</span><span class="val">${p.address||'—'}</span></div>
+      </div>
+    </div>
+    <div class="view-section">
+      <div class="view-section-title">Linked Student</div>
+      <div style="font-size:14px;font-weight:600;color:#111827;">${p.studentName||'<span style="color:#9ca3af;">No student linked</span>'}</div>
+      ${p.studentId?`<div style="font-size:12px;color:#6b7280;">ID: ${p.studentId}</div>`:''}
+    </div>`;
+  document.getElementById("viewModal").style.display="flex";
+}
+
+function deleteParent(i){ if(confirm("Delete this parent record?")){ parents.splice(i,1); localStorage.setItem("parents",JSON.stringify(parents)); render(); } }
+function logout(){ window.location.href="login.html"; }
+document.getElementById("modal").addEventListener("click",function(e){ if(e.target===this) closeModal(); });
+document.getElementById("viewModal").addEventListener("click",function(e){ if(e.target===this) closeView(); });
+populateStudents(); render();
+</script>
+</body>
+</html>

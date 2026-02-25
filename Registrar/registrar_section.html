@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Section Management</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="header">
+  <div class="logo"><img src="images/logo.png" class="logo-img"><small>Digital Academic Operating System</small></div>
+  <div class="user-info">Registrar | Ms. Ana Cruz <button class="logout-btn" onclick="logout()">Logout</button></div>
+</div>
+<div class="container">
+  <div class="sidebar">
+    <h4>REGISTRAR</h4>
+    <a href="registrar_profile.html">My Profile</a>
+    <a href="registrar_dashboard.html">Dashboard</a>
+    <a href="registrar_students.html">Student Records</a>
+    <a href="registrar_faculty.html">Faculty Records</a>
+    <a href="registrar_grades.html">Grade Evaluation</a>
+    <h4 style="margin-top:16px;font-size:10px;letter-spacing:1px;opacity:.7;">MANAGEMENT</h4>
+    <a href="registrar_college.html">Colleges</a>
+    <a href="registrar_course.html">Courses</a>
+    <a href="registrar_subject.html">Subjects</a>
+    <a href="registrar_yearlevel.html">Year Levels</a>
+    <a href="registrar_semester.html">Semesters</a>
+    <a href="registrar_section.html" class="active">Sections</a>
+    <a href="registrar_academic.html">Academic Year</a>
+    <h4 style="margin-top:16px;font-size:10px;letter-spacing:1px;opacity:.7;">RECORDS</h4>
+    <a href="registrar_parents.html">Parents</a>
+    <a href="registrar_employees.html">Employees</a>
+    <a href="registrar_admission.html">Admission</a>
+    <h4 style="margin-top:16px;font-size:10px;letter-spacing:1px;opacity:.7;">OTHERS</h4>
+    <a href="registrar_reports.html">Reports</a>
+    <a href="registrar_logs.html">User Logs</a>
+    <a href="registrar_roles.html">Roles & Permissions</a>
+  </div>
+  <div class="content">
+    <h2>Section Management</h2>
+    <button class="add-btn" onclick="openModal()">+ Add Section</button>
+    <div class="search-bar">
+      <input type="text" id="searchInput" placeholder="🔍 Search section..." oninput="render()">
+      <select id="filterCourse" onchange="render()"><option value="">All Courses</option></select>
+      <select id="filterYear" onchange="render()">
+        <option value="">All Year Levels</option>
+        <option value="1">1st Year</option><option value="2">2nd Year</option>
+        <option value="3">3rd Year</option><option value="4">4th Year</option>
+      </select>
+    </div>
+    <table>
+      <thead><tr><th>Section Name</th><th>Course</th><th>Year Level</th><th>Semester</th><th>Adviser</th><th>Max Students</th><th>Actions</th></tr></thead>
+      <tbody id="sectionTable"></tbody>
+    </table>
+  </div>
+</div>
+
+<div id="modal" class="modal">
+  <div class="modal-content" style="width:500px;">
+    <h3 id="modalTitle">Add Section</h3>
+    <input type="hidden" id="editIndex">
+    <div class="modal-section">
+      <div class="modal-section-title">Section Information</div>
+      <div class="form-row col2">
+        <div class="field"><label>Section Name</label><input type="text" id="secName" placeholder="e.g. BSIT-1A"></div>
+        <div class="field"><label>Course</label><select id="secCourse"><option value="">-- Select --</option></select></div>
+      </div>
+      <div class="form-row col2">
+        <div class="field"><label>Year Level</label>
+          <select id="secYear">
+            <option value="1">1st Year</option><option value="2">2nd Year</option>
+            <option value="3">3rd Year</option><option value="4">4th Year</option>
+          </select>
+        </div>
+        <div class="field"><label>Semester</label>
+          <select id="secSem">
+            <option>1st Semester</option><option>2nd Semester</option><option>Summer</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row col2">
+        <div class="field"><label>Adviser</label><input type="text" id="secAdviser" placeholder="e.g. Mr. Santos"></div>
+        <div class="field"><label>Max Students</label><input type="number" id="secMax" placeholder="40" value="40" min="1"></div>
+      </div>
+      <div class="form-row">
+        <div class="field"><label>Room</label><input type="text" id="secRoom" placeholder="e.g. Room 201"></div>
+      </div>
+    </div>
+    <button class="enroll-btn" onclick="saveSection()">Save Section</button>
+    <button class="danger enroll-btn" onclick="closeModal()" style="margin-top:8px;">Cancel</button>
+  </div>
+</div>
+
+<script>
+let sections = JSON.parse(localStorage.getItem("sections")) || [];
+
+function populateFilters(){
+  const courses = JSON.parse(localStorage.getItem("courses"))||[];
+  const sel  = document.getElementById("secCourse");
+  const filt = document.getElementById("filterCourse");
+  sel.innerHTML  = `<option value="">-- Select Course --</option>` + courses.map(c=>`<option>${c.name}</option>`).join("");
+  filt.innerHTML = `<option value="">All Courses</option>` + courses.map(c=>`<option>${c.name}</option>`).join("");
+}
+
+function render(){
+  const search = document.getElementById("searchInput").value.toLowerCase();
+  const course = document.getElementById("filterCourse").value;
+  const year   = document.getElementById("filterYear").value;
+  const filtered = sections.map((s,i)=>({...s,_idx:i})).filter(s=>{
+    if(search && !s.name.toLowerCase().includes(search)) return false;
+    if(course && s.course!==course) return false;
+    if(year   && s.year!=year)      return false;
+    return true;
+  });
+  const tbody = document.getElementById("sectionTable");
+  if(!filtered.length){ tbody.innerHTML=`<tr><td colspan="7" class="empty-note">No sections found.</td></tr>`; return; }
+  tbody.innerHTML = filtered.map(s=>`
+    <tr>
+      <td><strong>${s.name}</strong>${s.room?`<div style="font-size:11px;color:#9ca3af;">📍 ${s.room}</div>`:''}</td>
+      <td style="font-size:12px;">${s.course||'—'}</td>
+      <td><span style="background:#eef2ff;color:#2f4cff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;">${s.year}th Year</span></td>
+      <td style="font-size:12px;">${s.sem||'—'}</td>
+      <td style="font-size:12px;">${s.adviser||'—'}</td>
+      <td style="text-align:center;font-weight:700;">${s.max||40}</td>
+      <td>
+        <button onclick="editSection(${s._idx})">Edit</button>
+        <button class="danger" onclick="deleteSection(${s._idx})">Delete</button>
+      </td>
+    </tr>`).join("");
+}
+
+function openModal(){ clearForm(); document.getElementById("modalTitle").textContent="Add Section"; document.getElementById("modal").style.display="flex"; }
+function closeModal(){ document.getElementById("modal").style.display="none"; }
+function clearForm(){ ["secName","secAdviser","secRoom"].forEach(id=>document.getElementById(id).value=""); document.getElementById("secMax").value=40; document.getElementById("secCourse").value=""; document.getElementById("secYear").value="1"; document.getElementById("secSem").value="1st Semester"; document.getElementById("editIndex").value=""; }
+
+function saveSection(){
+  const name = document.getElementById("secName").value.trim();
+  if(!name){ alert("Section name is required."); return; }
+  const data = { name, course:document.getElementById("secCourse").value, year:document.getElementById("secYear").value, sem:document.getElementById("secSem").value, adviser:document.getElementById("secAdviser").value.trim(), max:document.getElementById("secMax").value, room:document.getElementById("secRoom").value.trim() };
+  const idx = document.getElementById("editIndex").value;
+  if(idx==="") sections.push(data); else sections[parseInt(idx)]=data;
+  localStorage.setItem("sections", JSON.stringify(sections));
+  closeModal(); render();
+}
+
+function editSection(i){
+  const s = sections[i];
+  document.getElementById("modalTitle").textContent="Edit Section";
+  document.getElementById("editIndex").value=i;
+  document.getElementById("secName").value    = s.name;
+  document.getElementById("secCourse").value  = s.course||"";
+  document.getElementById("secYear").value    = s.year||"1";
+  document.getElementById("secSem").value     = s.sem||"1st Semester";
+  document.getElementById("secAdviser").value = s.adviser||"";
+  document.getElementById("secMax").value     = s.max||40;
+  document.getElementById("secRoom").value    = s.room||"";
+  document.getElementById("modal").style.display="flex";
+}
+
+function deleteSection(i){ if(confirm("Delete this section?")){ sections.splice(i,1); localStorage.setItem("sections",JSON.stringify(sections)); render(); } }
+function logout(){ window.location.href="login.html"; }
+document.getElementById("modal").addEventListener("click",function(e){ if(e.target===this) closeModal(); });
+populateFilters(); render();
+</script>
+</body>
+</html>

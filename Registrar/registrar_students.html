@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Student Records</title>
+<link rel="stylesheet" href="css/style.css">
+
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">
+    <img src="images/logo.png" class="logo-img">
+    <small>Digital Academic Operating System</small>
+  </div>
+  <div class="user-info">
+    Registrar | Ms. Ana Cruz
+    <button class="logout-btn" onclick="logout()">Logout</button>
+  </div>
+</div>
+
+<div class="container">
+  <div class="sidebar">
+    <h4>REGISTRAR</h4>
+    <a href="registrar_profile.html">My Profile</a>
+    <a href="registrar_dashboard.html">Dashboard</a>
+    <a href="registrar_students.html" class="active">Student Records</a>
+    <a href="registrar_faculty.html">Faculty Records</a>
+    <a href="registrar_grades.html">Grade Evaluation</a>
+    <h4 style="margin-top:16px;font-size:10px;letter-spacing:1px;opacity:.7;">MANAGEMENT</h4>
+    <a href="registrar_college.html">Colleges</a>
+    <a href="registrar_course.html">Courses</a>
+    <a href="registrar_subject.html">Subjects</a>
+    <a href="registrar_yearlevel.html">Year Levels</a>
+    <a href="registrar_semester.html">Semesters</a>
+    <a href="registrar_section.html">Sections</a>
+    <a href="registrar_academic.html">Academic Year</a>
+    <h4 style="margin-top:16px;font-size:10px;letter-spacing:1px;opacity:.7;">RECORDS</h4>
+    <a href="registrar_parents.html" class="active">Parents</a>
+    <a href="registrar_employees.html">Employees</a>
+    <a href="registrar_admission.html">Admission</a>
+    <h4 style="margin-top:16px;font-size:10px;letter-spacing:1px;opacity:.7;">OTHERS</h4>
+    <a href="registrar_reports.html">Reports</a>
+    <a href="registrar_logs.html">User Logs</a>
+    <a href="registrar_roles.html">Roles & Permissions</a>
+  </div>
+
+  <div class="content">
+    <h2>Student Records</h2>
+    <button class="add-btn" onclick="openAddModal()">+ Add Student</button>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Student ID</th>
+          <th>Full Name</th>
+          <th>Course</th>
+          <th>Subjects</th>
+          <th>Type</th>
+          <th>Enrollment</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="studentTable"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div id="modal" class="modal">
+  <div class="modal-content">
+    <h3 id="modalTitle">Add Student</h3>
+    <input type="hidden" id="editIndex">
+
+    <!-- STUDENT INFO -->
+    <div class="modal-section">
+      <div class="modal-section-title">Student Information</div>
+      <label>Student ID</label>
+      <input type="text" id="studentId">
+      <label>Full Name</label>
+      <input type="text" id="fullName">
+      <div class="form-row col2" style="margin-top:10px;">
+        <div class="field">
+          <label>Course</label>
+          <select id="course">
+            <option value="">-- Select Course --</option>
+          </select>
+          <span id="noCourseWarn" style="display:none;font-size:11px;color:#d97706;margin-top:4px;display:none;">
+            ⚠️ No courses yet. <a href="registrar_course.html" style="color:#2f4cff;font-weight:700;">Add courses →</a>
+          </span>
+        </div>
+        <div class="field">
+          <label>Year Level</label>
+          <select id="yearLevel">
+            <option value="1">1st Year</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- STUDENT TYPE -->
+      <div style="margin-top:10px;">
+        <label style="font-weight:600; font-size:13px;">Student Type</label>
+        <div class="student-type-row">
+          <button type="button" class="type-btn active-new" id="btnNew" onclick="setStudentType('new')">
+            🆕 New Student
+          </button>
+          <button type="button" class="type-btn" id="btnOld" onclick="setStudentType('old')">
+            🔄 Old / Returning Student
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- SUBJECTS -->
+    <div class="modal-section">
+      <div class="modal-section-title">Subjects Enrolled</div>
+      <div id="noSubjectWarn" class="no-faculty-warn" style="display:none;">
+        ⚠️ No subjects found. <a href="registrar_subject.html" style="color:#2f4cff;font-weight:700;">Add to Master List →</a> &nbsp;or&nbsp; <a href="registrar_faculty.html" style="color:#2f4cff;font-weight:700;">Add via Faculty →</a>
+      </div>
+      <div class="subjects-wrap" id="subjectsWrap"></div>
+      <button type="button" class="btn-add-subj" onclick="addSubjectCard()">+ Add Subject</button>
+    </div>
+
+    <!-- PRACTICUM -->
+    <div class="modal-section">
+      <div class="modal-section-title">Practicum / OJT</div>
+      <div class="prac-toggle-row">
+        <label class="sw">
+          <input type="checkbox" id="pracToggle" onchange="togglePrac()">
+          <span class="sw-track"></span>
+        </label>
+        <span class="sw-label">Student has Practicum / OJT</span>
+      </div>
+      <div class="prac-fields" id="pracFields">
+        <div class="prac-title">Practicum Details</div>
+        <div class="form-row col2">
+          <div class="field"><label>Company / Organization</label><input type="text" id="pracCompany" placeholder="e.g. ABC Tech Solutions"></div>
+          <div class="field"><label>Supervisor</label><input type="text" id="pracSupervisor" placeholder="Supervisor name"></div>
+        </div>
+        <div class="form-row col3">
+          <div class="field"><label>Required Hours</label><input type="number" id="pracRequired" placeholder="486" min="0"></div>
+          <div class="field"><label>Completed Hours</label><input type="number" id="pracCompleted" placeholder="200" min="0"></div>
+          <div class="field"><label>Units</label><input type="number" id="pracUnits" placeholder="6" min="0"></div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label>Remarks</label><input type="text" id="pracRemarks" placeholder="e.g. Ongoing, Completed..."></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- REQUIREMENTS -->
+    <div class="modal-section">
+      <div class="modal-section-title">Requirements</div>
+
+      <!-- Shown only for OLD students -->
+      <div class="req-skipped-note" id="reqSkippedNote">
+        ✅ Requirements already submitted — no need to re-submit for old/returning students.
+      </div>
+
+      <!-- Shown only for NEW students -->
+      <div class="req-section" id="reqSection">
+        <div class="req-list">
+          <div class="req-item" onclick="toggleReq(this)">
+            <input type="checkbox" id="reqForm137">
+            <div class="req-check"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4l2.5 2.5L9 1" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <span class="req-text">Form 137</span>
+          </div>
+          <div class="req-item" onclick="toggleReq(this)">
+            <input type="checkbox" id="reqGoodMoral">
+            <div class="req-check"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4l2.5 2.5L9 1" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <span class="req-text">Good Moral</span>
+          </div>
+          <div class="req-item" onclick="toggleReq(this)">
+            <input type="checkbox" id="reqBirth">
+            <div class="req-check"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4l2.5 2.5L9 1" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <span class="req-text">Birth Certificate</span>
+          </div>
+          <div class="req-item" onclick="toggleReq(this)">
+            <input type="checkbox" id="reqPicture">
+            <div class="req-check"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4l2.5 2.5L9 1" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <span class="req-text">2x2 ID Picture</span>
+          </div>
+          <div class="req-item" onclick="toggleReq(this)">
+            <input type="checkbox" id="reqMedical">
+            <div class="req-check"><svg width="10" height="8" viewBox="0 0 10 8" fill="none"><path d="M1 4l2.5 2.5L9 1" stroke="#fff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+            <span class="req-text">Medical Certificate</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <button class="enroll-btn" onclick="saveStudent()">Save Student</button>
+    <button class="danger enroll-btn" onclick="closeModal()">Cancel</button>
+  </div>
+</div>
+
+<script>
+let students  = JSON.parse(localStorage.getItem("students"))  || [];
+let subjCount = 0;
+let currentStudentType = "new"; // "new" or "old"
+
+/* ===== STUDENT TYPE ===== */
+function setStudentType(type) {
+  currentStudentType = type;
+  const btnNew  = document.getElementById("btnNew");
+  const btnOld  = document.getElementById("btnOld");
+  const reqSect = document.getElementById("reqSection");
+  const reqNote = document.getElementById("reqSkippedNote");
+
+  if (type === "new") {
+    btnNew.className = "type-btn active-new";
+    btnOld.className = "type-btn";
+    reqSect.classList.remove("hidden");
+    reqNote.classList.remove("show");
+  } else {
+    btnNew.className = "type-btn";
+    btnOld.className = "type-btn active-old";
+    reqSect.classList.add("hidden");
+    reqNote.classList.add("show");
+    // Clear all requirement checkboxes when switching to old
+    ["reqForm137","reqGoodMoral","reqBirth","reqPicture","reqMedical"].forEach(id => {
+      document.getElementById(id).checked = false;
+      document.getElementById(id).closest(".req-item").classList.remove("on");
+    });
+  }
+}
+
+/* ===== POPULATE COURSE DROPDOWN FROM localStorage ===== */
+function populateCourseDropdown(currentVal) {
+  const courses = JSON.parse(localStorage.getItem("courses")) || [];
+  const sel     = document.getElementById("course");
+  const warn    = document.getElementById("noCourseWarn");
+  if (!courses.length) {
+    sel.innerHTML = `<option value="">-- No courses yet --</option>`;
+    warn.style.display = "block";
+  } else {
+    warn.style.display = "none";
+    sel.innerHTML = `<option value="">-- Select Course --</option>` +
+      courses.map(c => `<option value="${c.name}" ${c.name === currentVal ? "selected" : ""}>${c.name}${c.code ? " ("+c.code+")" : ""}</option>`).join("");
+  }
+}
+
+/* ===== POPULATE YEAR LEVEL DROPDOWN FROM localStorage ===== */
+function populateYearDropdown(currentVal) {
+  const yls = JSON.parse(localStorage.getItem("yearLevels")) || [
+    {num:1,label:"1st Year"},{num:2,label:"2nd Year"},
+    {num:3,label:"3rd Year"},{num:4,label:"4th Year"}
+  ];
+  const sel = document.getElementById("yearLevel");
+  sel.innerHTML = yls.sort((a,b)=>a.num-b.num)
+    .map(y=>`<option value="${y.num}" ${y.num == currentVal ? "selected":""}>${y.label}</option>`).join("");
+}
+
+/* ===== GET ALL SUBJECTS: Master List FIRST, Faculty as supplement ===== */
+function getAllSubjects() {
+  const masterSubjects = JSON.parse(localStorage.getItem("masterSubjects")) || [];
+  const faculty        = JSON.parse(localStorage.getItem("faculty"))        || [];
+  const list = [];
+  const seen = new Set();
+
+  // 1) Master subject list — primary source
+  masterSubjects.forEach(s => {
+    const key = (s.code || s.name || "").toLowerCase().trim();
+    if (!seen.has(key)) {
+      seen.add(key);
+      list.push({
+        subjectName: s.name,
+        subjectCode: s.code   || "",
+        units:       s.units  || "",
+        time:        "",
+        days:        [],
+        facultyName: "",
+        prereq:      s.prereq || "",
+        source:      "master"
+      });
+    }
+  });
+
+  // 2) Faculty schedules — add extra info or subjects not yet in master
+  faculty.forEach(f => {
+    (f.schedules || []).forEach(s => {
+      if (!s.subjectName) return;
+      const key = (s.subjectCode || s.subjectName || "").toLowerCase().trim();
+      if (seen.has(key)) {
+        // Enrich existing master entry with faculty/time if blank
+        const existing = list.find(x => (x.subjectCode||x.subjectName).toLowerCase().trim() === key);
+        if (existing && !existing.facultyName) {
+          existing.facultyName = f.name;
+          existing.time        = s.time || "";
+          existing.days        = s.days || [];
+        }
+      } else {
+        seen.add(key);
+        list.push({
+          subjectName: s.subjectName,
+          subjectCode: s.subjectCode || "",
+          units:       s.units       || "",
+          time:        s.time        || "",
+          days:        s.days        || [],
+          facultyName: f.name,
+          prereq:      "",
+          source:      "faculty"
+        });
+      }
+    });
+  });
+
+  return list;
+}
+
+// Keep old name as alias so nothing breaks
+function getAllFacultySubjects() { return getAllSubjects(); }
+
+/* ===== RENDER TABLE ===== */
+function renderStudents() {
+  const tbody = document.getElementById("studentTable");
+  tbody.innerHTML = "";
+  students.forEach((s, index) => {
+    if (!s.enrolled) return;
+    const names   = (s.subjects || []).map(sb => sb.name).filter(Boolean);
+    const preview = names.length
+      ? names.slice(0,2).join(", ") + (names.length > 2 ? ` +${names.length-2} more` : "")
+      : "—";
+    const typeBadge = s.studentType === "old"
+      ? `<span class="type-badge badge-old">🔄 Old</span>`
+      : `<span class="type-badge badge-new">🆕 New</span>`;
+    tbody.innerHTML += `
+      <tr>
+        <td>${s.studentId}</td>
+        <td>${s.fullName}</td>
+        <td>${s.course}</td>
+        <td style="font-size:12px;">${names.length} subject(s)<br><span style="color:#6b7280;">${preview}</span></td>
+        <td>${typeBadge}</td>
+        <td>Enrolled</td>
+        <td>
+          <button onclick="editStudent(${index})">Update</button>
+          <button class="danger" onclick="deleteStudent(${index})">Delete</button>
+        </td>
+      </tr>`;
+  });
+  syncDashboard();
+}
+
+function syncDashboard() {
+  const enrolled = students.filter(s => s.enrolled);
+  localStorage.setItem("students", JSON.stringify(students));
+  localStorage.setItem("dashboardData", JSON.stringify({
+    totalStudents:  enrolled.length,
+    totalSubjects:  enrolled.reduce((a,s) => a + (s.subjects||[]).length, 0),
+    totalUnits:     enrolled.reduce((a,s) => a + (s.subjects||[]).reduce((b,sb) => b+(parseInt(sb.units)||0),0), 0),
+    withPracticum:  enrolled.filter(s => s.practicum && s.practicum.enabled).length,
+    lastUpdated:    new Date().toISOString()
+  }));
+}
+
+/* ===== OPEN ADD ===== */
+function openAddModal() {
+  document.getElementById("modal").style.display = "flex";
+  document.getElementById("modalTitle").innerText = "Add Student";
+  document.getElementById("editIndex").value = "";
+  clearForm();
+  populateCourseDropdown();
+  populateYearDropdown(1);
+  addSubjectCard();
+  checkSubjectWarn();
+}
+
+function checkSubjectWarn() {
+  const subs = getAllSubjects();
+  document.getElementById("noSubjectWarn").style.display = subs.length ? "none" : "block";
+}
+
+/* ===== CLEAR FORM ===== */
+function clearForm() {
+  ["studentId","fullName"].forEach(id => document.getElementById(id).value = "");
+  document.getElementById("course").value    = "";
+  document.getElementById("yearLevel").value = "1";
+  document.getElementById("pracToggle").checked = false;
+  document.getElementById("pracFields").classList.remove("on");
+  ["pracCompany","pracSupervisor","pracRequired","pracCompleted","pracUnits","pracRemarks"]
+    .forEach(id => document.getElementById(id).value = "");
+  ["reqForm137","reqGoodMoral","reqBirth","reqPicture","reqMedical"].forEach(id => {
+    document.getElementById(id).checked = false;
+    document.getElementById(id).closest(".req-item").classList.remove("on");
+  });
+  document.getElementById("subjectsWrap").innerHTML = "";
+  subjCount = 0;
+  // Reset to "new" student type by default
+  setStudentType("new");
+}
+
+/* ===== ADD SUBJECT CARD ===== */
+function addSubjectCard(data) {
+  subjCount++;
+  const id   = "subj_" + Date.now() + "_" + subjCount;
+  const days = [["M","Mon"],["T","Tue"],["W","Wed"],["Th","Thu"],["F","Fri"],["Sat","Sat"]];
+
+  const daysHtml = days.map(([val, lbl]) => {
+    const chk = data && data.days && data.days.includes(val) ? "checked" : "";
+    return `<input type="checkbox" class="day-cb" id="${id}_${val}" value="${val}" ${chk}><label for="${id}_${val}">${lbl}</label>`;
+  }).join("");
+
+  const customTagsHtml = (data && data.customDays || [])
+    .map(d => `<span class="c-day-tag">${d}<button type="button" onclick="this.parentElement.remove()">×</button></span>`)
+    .join("");
+
+  const card = document.createElement("div");
+  card.className = "subject-card"; card.id = id;
+  card.innerHTML = `
+    <div class="subject-card-top">
+      <span class="subj-label">Subject ${subjCount}</span>
+      <button type="button" class="btn-rm-subj" onclick="document.getElementById('${id}').remove(); renumber()">✕ Remove</button>
+    </div>
+
+    <div class="form-row">
+      <div class="field">
+        <label>Subject Name <span class="auto-filled-badge" id="${id}_badge" style="display:none;">✓ Auto-filled</span></label>
+        <div class="search-wrap">
+          <input type="text" class="search-input sj-search" id="${id}_search"
+            placeholder="Type subject name to search..."
+            value="${data ? data.name||"" : ""}"
+            oninput="onSubjectSearch(this, '${id}')"
+            onkeydown="onSearchKeydown(event, '${id}')"
+            autocomplete="off">
+          <div class="autocomplete-list" id="${id}_acList"></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-row col2">
+      <div class="field"><label>Subject Code</label><input type="text" class="sj-code" id="${id}_code" placeholder="e.g. IT101" value="${data ? data.code||"" : ""}"></div>
+      <div class="field"><label>Faculty</label><input type="text" class="sj-faculty" id="${id}_faculty" placeholder="Auto-filled from Faculty Records" value="${data ? data.faculty||"" : ""}"></div>
+    </div>
+    <div class="form-row col3">
+      <div class="field"><label>Units</label><input type="number" class="sj-units" id="${id}_units" placeholder="e.g. 3" min="0" value="${data ? data.units||"" : ""}"></div>
+      <div class="field"><label>Time</label><input type="text" class="sj-time" id="${id}_time" placeholder="Auto-filled" value="${data ? data.time||"" : ""}"></div>
+      <div class="field"><label>Pre-Requisite</label><input type="text" class="sj-prereq" id="${id}_prereq" placeholder="None" value="${data ? data.prereq||"" : ""}"></div>
+    </div>
+    <div class="form-row">
+      <div class="field">
+        <label>Days</label>
+        <div class="days-group" id="${id}_daysGroup">${daysHtml}</div>
+        <div class="custom-day-row">
+          <input type="text" class="sj-custom-input" placeholder="Custom day (e.g. Sunday)">
+          <button type="button" class="btn-add-day" onclick="addCustomDay('${id}')">+ Add</button>
+        </div>
+        <div class="custom-days-out" id="${id}_cd">${customTagsHtml}</div>
+      </div>
+    </div>`;
+
+  document.getElementById("subjectsWrap").appendChild(card);
+
+  document.addEventListener("click", function handler(e) {
+    const wrap = document.getElementById(id);
+    if (wrap && !wrap.contains(e.target)) {
+      const list = document.getElementById(id + "_acList");
+      if (list) { list.classList.remove("open"); list._activeIdx = -1; }
+    }
+  });
+}
+
+/* ===== AUTOCOMPLETE SEARCH ===== */
+function onSubjectSearch(input, cardId) {
+  const query  = input.value.trim().toLowerCase();
+  const list   = document.getElementById(cardId + "_acList");
+  const all    = getAllFacultySubjects();
+  list._activeIdx = -1;
+
+  if (!query) { list.classList.remove("open"); list.innerHTML = ""; return; }
+
+  const matched = all.filter(s =>
+    s.subjectName.toLowerCase().includes(query) ||
+    s.subjectCode.toLowerCase().includes(query)
+  );
+
+  if (!matched.length) {
+    list.innerHTML = `<div class="ac-item" style="color:#9ca3af;cursor:default;">No matching subjects found</div>`;
+    list.classList.add("open");
+    return;
+  }
+
+  list.innerHTML = matched.map((s, i) => {
+    const srcBadge = s.source === "faculty"
+      ? `<span style="background:#fef9c3;color:#a16207;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;margin-left:4px;">Faculty</span>`
+      : `<span style="background:#dcfce7;color:#16a34a;font-size:10px;font-weight:700;padding:1px 6px;border-radius:10px;margin-left:4px;">Master List</span>`;
+    return `
+    <div class="ac-item" data-idx="${i}"
+      onmousedown="selectSubject(event, '${cardId}', ${i})"
+      onmouseover="this.parentElement._activeIdx=${i}; highlightAc('${cardId}')">
+      <div class="ac-name">${s.subjectName} ${s.subjectCode ? `<span style="color:#2f4cff;font-size:11px;">(${s.subjectCode})</span>` : ""} ${srcBadge}</div>
+      <div class="ac-meta">
+        ${s.facultyName ? "👨‍🏫 "+s.facultyName+" &nbsp;·&nbsp; " : ""}
+        🕐 ${s.time||"—"} &nbsp;·&nbsp; 📅 ${(s.days||[]).join(", ")||"—"} &nbsp;·&nbsp; ${s.units||"—"} units
+        ${s.prereq ? " &nbsp;·&nbsp; Prereq: "+s.prereq : ""}
+      </div>
+    </div>`;
+  }).join("");
+
+  list._matched = matched;
+  list.classList.add("open");
+}
+
+function highlightAc(cardId) {
+  const list  = document.getElementById(cardId + "_acList");
+  const items = list.querySelectorAll(".ac-item");
+  items.forEach((el, i) => el.classList.toggle("active", i === list._activeIdx));
+}
+
+function onSearchKeydown(e, cardId) {
+  const list  = document.getElementById(cardId + "_acList");
+  const items = list.querySelectorAll(".ac-item[data-idx]");
+  if (!list.classList.contains("open") || !items.length) return;
+
+  if (e.key === "ArrowDown") {
+    e.preventDefault();
+    list._activeIdx = Math.min((list._activeIdx ?? -1) + 1, items.length - 1);
+    highlightAc(cardId);
+  } else if (e.key === "ArrowUp") {
+    e.preventDefault();
+    list._activeIdx = Math.max((list._activeIdx ?? 0) - 1, 0);
+    highlightAc(cardId);
+  } else if (e.key === "Enter" && list._activeIdx >= 0) {
+    e.preventDefault();
+    selectSubject(null, cardId, list._activeIdx);
+  } else if (e.key === "Escape") {
+    list.classList.remove("open");
+  }
+}
+
+function selectSubject(e, cardId, idx) {
+  if (e) e.preventDefault();
+  const list    = document.getElementById(cardId + "_acList");
+  const matched = list._matched || [];
+  const s       = matched[idx];
+  if (!s) return;
+
+  document.getElementById(cardId + "_search").value  = s.subjectName;
+  document.getElementById(cardId + "_code").value    = s.subjectCode;
+  document.getElementById(cardId + "_faculty").value = s.facultyName;
+  document.getElementById(cardId + "_units").value   = s.units;
+  document.getElementById(cardId + "_time").value    = s.time;
+
+  [cardId+"_code", cardId+"_faculty", cardId+"_time", cardId+"_units"].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.classList.add("auto-filled");
+  });
+  const badge = document.getElementById(cardId + "_badge");
+  if (badge) badge.style.display = "inline";
+
+  const daysGroup = document.getElementById(cardId + "_daysGroup");
+  daysGroup.querySelectorAll(".day-cb").forEach(cb => {
+    cb.checked  = (s.days || []).includes(cb.value);
+    cb.disabled = true;
+  });
+
+  list.classList.remove("open");
+}
+
+/* ===== CUSTOM DAY ===== */
+function addCustomDay(cardId) {
+  const card  = document.getElementById(cardId);
+  const input = card.querySelector(".sj-custom-input");
+  const val   = input.value.trim();
+  if (!val) return;
+  const tag   = document.createElement("span");
+  tag.className = "c-day-tag";
+  tag.innerHTML = `${val}<button type="button" onclick="this.parentElement.remove()">×</button>`;
+  document.getElementById(cardId + "_cd").appendChild(tag);
+  input.value = "";
+}
+
+function renumber() {
+  document.querySelectorAll(".subject-card .subj-label").forEach((el, i) => {
+    el.textContent = "Subject " + (i + 1);
+  });
+}
+
+function collectSubjects() {
+  return Array.from(document.querySelectorAll("#subjectsWrap .subject-card")).map(card => ({
+    name:      card.querySelector(".sj-search")  ? card.querySelector(".sj-search").value.trim()  : "",
+    code:      card.querySelector(".sj-code")    ? card.querySelector(".sj-code").value.trim()    : "",
+    faculty:   card.querySelector(".sj-faculty") ? card.querySelector(".sj-faculty").value.trim() : "",
+    units:     card.querySelector(".sj-units")   ? card.querySelector(".sj-units").value.trim()   : "",
+    time:      card.querySelector(".sj-time")    ? card.querySelector(".sj-time").value.trim()    : "",
+    prereq:    card.querySelector(".sj-prereq")  ? card.querySelector(".sj-prereq").value.trim()  : "",
+    days:      Array.from(card.querySelectorAll(".day-cb:checked")).map(cb => cb.value),
+    customDays:Array.from(card.querySelectorAll(".custom-days-out .c-day-tag"))
+                    .map(t => t.childNodes[0].textContent.trim())
+  }));
+}
+
+/* ===== SAVE ===== */
+function saveStudent() {
+  const sid = document.getElementById("studentId").value.trim();
+  const fn  = document.getElementById("fullName").value.trim();
+  const cr  = document.getElementById("course").value;
+  if (!sid || !fn || !cr) { alert("Complete student info"); return; }
+
+  const isOld = currentStudentType === "old";
+
+  const data = {
+    studentId:   sid, fullName: fn, course: cr,
+    yearLevel:   document.getElementById("yearLevel").value,
+    studentType: currentStudentType,
+    subjects:    collectSubjects(),
+    practicum: {
+      enabled:        document.getElementById("pracToggle").checked,
+      company:        document.getElementById("pracCompany").value.trim(),
+      supervisor:     document.getElementById("pracSupervisor").value.trim(),
+      requiredHours:  document.getElementById("pracRequired").value,
+      completedHours: document.getElementById("pracCompleted").value,
+      units:          document.getElementById("pracUnits").value,
+      remarks:        document.getElementById("pracRemarks").value.trim()
+    },
+    // Old students: requirements auto-set to true (already submitted previously)
+    requirements: isOld ? {
+      form137: true, goodMoral: true, birth: true, picture: true, medical: true
+    } : {
+      form137:   document.getElementById("reqForm137").checked,
+      goodMoral: document.getElementById("reqGoodMoral").checked,
+      birth:     document.getElementById("reqBirth").checked,
+      picture:   document.getElementById("reqPicture").checked,
+      medical:   document.getElementById("reqMedical").checked
+    },
+    enrolled: true
+  };
+
+  const idx = document.getElementById("editIndex").value;
+  if (idx === "") { students.push(data); } else { students[parseInt(idx)] = data; }
+
+  closeModal(); renderStudents();
+}
+
+/* ===== EDIT ===== */
+function editStudent(index) {
+  const s = students[index];
+  document.getElementById("modal").style.display = "flex";
+  document.getElementById("modalTitle").innerText = "Update Student";
+  document.getElementById("editIndex").value = index;
+  clearForm();
+
+  populateCourseDropdown(s.course);
+  populateYearDropdown(s.yearLevel || 1);
+  document.getElementById("studentId").value = s.studentId;
+  document.getElementById("fullName").value   = s.fullName;
+
+  setStudentType(s.studentType || "new");
+
+  (s.subjects || []).forEach(subj => addSubjectCard(subj));
+  if (!(s.subjects || []).length) addSubjectCard();
+
+  if (s.practicum && s.practicum.enabled) {
+    document.getElementById("pracToggle").checked = true;
+    document.getElementById("pracFields").classList.add("on");
+    document.getElementById("pracCompany").value       = s.practicum.company || "";
+    document.getElementById("pracSupervisor").value    = s.practicum.supervisor || "";
+    document.getElementById("pracRequired").value      = s.practicum.requiredHours || "";
+    document.getElementById("pracCompleted").value     = s.practicum.completedHours || "";
+    document.getElementById("pracUnits").value         = s.practicum.units || "";
+    document.getElementById("pracRemarks").value       = s.practicum.remarks || "";
+  }
+
+  // Only restore req checkboxes if new student
+  if (!s.studentType || s.studentType === "new") {
+    const reqMap = { form137:"reqForm137", goodMoral:"reqGoodMoral", birth:"reqBirth", picture:"reqPicture", medical:"reqMedical" };
+    Object.entries(reqMap).forEach(([key, id]) => {
+      if (s.requirements && s.requirements[key]) {
+        document.getElementById(id).checked = true;
+        document.getElementById(id).closest(".req-item").classList.add("on");
+      }
+    });
+  }
+
+  checkSubjectWarn();
+}
+
+/* ===== DELETE ===== */
+function deleteStudent(index) {
+  if (confirm("Delete student?")) {
+    students.splice(index, 1); renderStudents();
+  }
+}
+
+/* ===== HELPERS ===== */
+function closeModal()  { document.getElementById("modal").style.display = "none"; }
+function togglePrac()  { document.getElementById("pracFields").classList.toggle("on", document.getElementById("pracToggle").checked); }
+function toggleReq(item) {
+  item.classList.toggle("on");
+  item.querySelector("input[type='checkbox']").checked = item.classList.contains("on");
+}
+function logout() { window.location.href = "login.html"; }
+
+document.getElementById("modal").addEventListener("click", function(e) {
+  if (e.target === this) closeModal();
+});
+
+renderStudents();
+</script>
+</body>
+</html>

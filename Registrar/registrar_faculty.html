@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Faculty Records</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<div class="header">
+  <div class="logo">
+    <img src="images/logo.png" class="logo-img">
+    <small>Digital Academic Operating System</small>
+  </div>
+  <div class="user-info">
+    Registrar | Ms. Ana Cruz
+    <button class="logout-btn" onclick="logout()">Logout</button>
+  </div>
+</div>
+
+<div class="container">
+  <div class="sidebar">
+  <h4">REGISTRAR</h4>
+    <a href="registrar_profile.html">My Profile</a>
+    <a href="registrar_dashboard.html">Dashboard</a>
+    <a href="registrar_students.html">Student Records</a>
+    <a href="registrar_faculty.html" class="active">Faculty Records</a>
+    <a href="registrar_grades.html">Grade Evaluation</a>
+    <h4 style="margin-top:16px;font-size:10px;letter-spacing:1px;opacity:.7;">MANAGEMENT</h4>
+    <a href="registrar_college.html">Colleges</a>
+    <a href="registrar_course.html">Courses</a>
+    <a href="registrar_subject.html">Subjects</a>
+    <a href="registrar_yearlevel.html">Year Levels</a>
+    <a href="registrar_semester.html">Semesters</a>
+    <a href="registrar_section.html">Sections</a>
+    <a href="registrar_academic.html">Academic Year</a>
+    <h4 style="margin-top:16px;font-size:10px;letter-spacing:1px;opacity:.7;">RECORDS</h4>
+    <a href="registrar_parents.html">Parents</a>
+    <a href="registrar_employees.html">Employees</a>
+    <a href="registrar_admission.html">Admission</a>
+    <h4 style="margin-top:16px;font-size:10px;letter-spacing:1px;opacity:.7;">OTHERS</h4>
+    <a href="registrar_reports.html">Reports</a>
+    <a href="registrar_logs.html">User Logs</a>
+    <a href="registrar_roles.html">Roles & Permissions</a>
+  </div>
+
+  <div class="content">
+    <h2>Faculty Records</h2>
+    <button class="add-btn" onclick="openAddModal()">+ Add Faculty</button>
+
+    <table>
+      <thead>
+        <tr>
+          <th>Name</th>
+          <th>Department</th>
+          <th>Contact</th>
+          <th>Subjects / Load</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="facultyTable"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ADD/EDIT MODAL -->
+<div id="modal" class="modal">
+  <div class="modal-content faculty-modal">
+    <h3 id="modalTitle">Add Faculty</h3>
+    <input type="hidden" id="editIndex">
+
+    <!-- PERSONAL INFO -->
+    <div class="modal-section">
+      <div class="modal-section-title">Personal Information</div>
+      <div class="form-row col2">
+        <div class="field"><label>Full Name</label><input type="text" id="fName" placeholder="e.g. Mr. Juan Santos"></div>
+        <div class="field"><label>Department</label><input type="text" id="fDept" placeholder="e.g. IT Department"></div>
+      </div>
+      <div class="form-row col2">
+        <div class="field"><label>Email</label><input type="text" id="fEmail" placeholder="e.g. jsantos@school.edu"></div>
+        <div class="field"><label>Phone</label><input type="text" id="fPhone" placeholder="e.g. 09XX-XXX-XXXX"></div>
+      </div>
+      <div class="form-row col2">
+        <div class="field"><label>Max Units / Load</label><input type="number" id="fMaxLoad" placeholder="e.g. 21" min="1"></div>
+        <div class="field"></div>
+      </div>
+    </div>
+
+    <!-- SUBJECTS & SCHEDULES -->
+    <div class="modal-section">
+      <div class="modal-section-title">Subjects &amp; Schedules</div>
+      <div class="sched-wrap" id="schedWrap"></div>
+      <button type="button" class="btn-add-sched" onclick="addSchedCard()">+ Add Subject &amp; Schedule</button>
+    </div>
+
+    <button class="enroll-btn" onclick="saveFaculty()">Save Faculty</button>
+    <button class="danger enroll-btn" onclick="closeModal()" style="margin-top:8px;">Cancel</button>
+  </div>
+</div>
+
+<!-- VIEW MODAL -->
+<div id="viewModal" class="modal">
+  <div class="modal-content view-modal">
+    <h3>Faculty Record</h3>
+    <div id="viewContent"></div>
+    <button class="danger" onclick="closeViewModal()" style="margin-top:14px;">Close</button>
+  </div>
+</div>
+
+<script>
+let faculty    = JSON.parse(localStorage.getItem("faculty")) || [];
+let schedCount = 0;
+
+/* ===== RENDER TABLE ===== */
+function renderFaculty() {
+  const tbody = document.getElementById("facultyTable");
+  tbody.innerHTML = "";
+
+  if (!faculty.length) {
+    tbody.innerHTML = `<tr><td colspan="5" class="empty-note">No faculty added yet.</td></tr>`;
+  } else {
+    faculty.forEach((f, i) => {
+      const subjects   = f.schedules || [];
+      const totalUnits = subjects.reduce((a, s) => a + (parseInt(s.units) || 0), 0);
+      const maxLoad    = parseInt(f.maxLoad) || 0;
+      const over       = maxLoad > 0 && totalUnits > maxLoad;
+      const pct        = maxLoad > 0 ? Math.min((totalUnits / maxLoad) * 100, 100) : 0;
+      const subjNames  = subjects.map(s => s.subjectName).filter(Boolean);
+      const preview    = subjNames.slice(0, 2).join(", ") + (subjNames.length > 2 ? ` +${subjNames.length - 2} more` : "");
+
+      tbody.innerHTML += `
+        <tr>
+          <td>
+            <strong>${f.name}</strong><br>
+            <span class="dept-badge">${f.department || "—"}</span>
+          </td>
+          <td style="font-size:12px;">${f.department || "—"}</td>
+          <td style="font-size:12px;">${f.email || "—"}<br>${f.phone || "—"}</td>
+          <td>
+            <div style="font-size:12px;">${subjects.length} subject(s) · ${totalUnits} units</div>
+            <div style="font-size:12px;color:#6b7280;">${preview || "—"}</div>
+            <div class="load-bar-wrap">
+              <div class="load-bar">
+                <div class="load-bar-fill ${over ? "over" : ""}" style="width:${pct}%"></div>
+              </div>
+              <span style="font-size:11px;color:${over ? "#ef4444" : "#6b7280"};font-weight:${over ? "700" : "400"};">${totalUnits}/${maxLoad || "?"}u</span>
+            </div>
+          </td>
+          <td>
+            <button onclick="viewFaculty(${i})">View</button>
+            <button onclick="editFaculty(${i})">Update</button>
+            <button class="danger" onclick="deleteFaculty(${i})">Delete</button>
+          </td>
+        </tr>`;
+    });
+  }
+
+  // Update stats cards
+  const allSubjects = faculty.reduce((a, f) => a + (f.schedules || []).length, 0);
+  const overloaded  = faculty.filter(f => {
+    const u = (f.schedules || []).reduce((a, s) => a + (parseInt(s.units) || 0), 0);
+    return parseInt(f.maxLoad) > 0 && u > parseInt(f.maxLoad);
+  }).length;
+
+  document.getElementById("cardTotal").textContent      = faculty.length;
+  document.getElementById("cardSubjects").textContent   = allSubjects;
+  document.getElementById("cardOverloaded").textContent = overloaded;
+
+  localStorage.setItem("faculty", JSON.stringify(faculty));
+}
+
+/* ===== OPEN ADD ===== */
+function openAddModal() {
+  document.getElementById("modalTitle").textContent = "Add Faculty";
+  document.getElementById("editIndex").value = "";
+  clearForm();
+  addSchedCard();
+  document.getElementById("modal").style.display = "flex";
+}
+
+/* ===== CLEAR FORM ===== */
+function clearForm() {
+  ["fName","fDept","fEmail","fPhone","fMaxLoad"].forEach(id => document.getElementById(id).value = "");
+  document.getElementById("schedWrap").innerHTML = "";
+  schedCount = 0;
+}
+
+/* ===== ADD SCHEDULE CARD ===== */
+function addSchedCard(data) {
+  schedCount++;
+  const id   = "sc_" + Date.now() + "_" + schedCount;
+  const days = [["M","Mon"],["T","Tue"],["W","Wed"],["Th","Thu"],["F","Fri"],["Sat","Sat"]];
+  const daysHtml = days.map(([val, lbl]) => {
+    const chk = data && data.days && data.days.includes(val) ? "checked" : "";
+    return `<input type="checkbox" class="day-cb" id="${id}_${val}" value="${val}" ${chk}><label for="${id}_${val}">${lbl}</label>`;
+  }).join("");
+
+  const card = document.createElement("div");
+  card.className = "sched-card";
+  card.id        = id;
+  card.innerHTML = `
+    <div class="sched-card-top">
+      <span class="sched-num">Subject ${schedCount}</span>
+      <button type="button" class="btn-rm-sched" onclick="document.getElementById('${id}').remove(); renumberSched()">✕ Remove</button>
+    </div>
+    <div class="form-row col2">
+      <div class="field"><label>Subject Name</label><input type="text" class="sc-name" placeholder="e.g. Programming 1" value="${data ? data.subjectName||"" : ""}"></div>
+      <div class="field"><label>Subject Code</label><input type="text" class="sc-code" placeholder="e.g. IT101" value="${data ? data.subjectCode||"" : ""}"></div>
+    </div>
+    <div class="form-row col2">
+      <div class="field"><label>Units</label><input type="number" class="sc-units" placeholder="e.g. 3" min="0" value="${data ? data.units||"" : ""}"></div>
+      <div class="field"><label>Time</label><input type="text" class="sc-time" placeholder="e.g. 8AM–10AM" value="${data ? data.time||"" : ""}"></div>
+    </div>
+    <div class="field" style="margin-top:4px;">
+      <label style="font-size:12px;font-weight:600;">Days</label>
+      <div class="days-group">${daysHtml}</div>
+    </div>`;
+
+  document.getElementById("schedWrap").appendChild(card);
+}
+
+function renumberSched() {
+  document.querySelectorAll(".sched-card .sched-num").forEach((el, i) => {
+    el.textContent = "Subject " + (i + 1);
+  });
+}
+
+function collectSchedules() {
+  return Array.from(document.querySelectorAll("#schedWrap .sched-card")).map(card => ({
+    subjectName: card.querySelector(".sc-name").value.trim(),
+    subjectCode: card.querySelector(".sc-code").value.trim(),
+    units:       card.querySelector(".sc-units").value.trim(),
+    time:        card.querySelector(".sc-time").value.trim(),
+    days:        Array.from(card.querySelectorAll(".day-cb:checked")).map(cb => cb.value)
+  }));
+}
+
+/* ===== SAVE ===== */
+function saveFaculty() {
+  const name = document.getElementById("fName").value.trim();
+  if (!name) { alert("Please enter faculty name."); return; }
+
+  const data = {
+    name:       name,
+    department: document.getElementById("fDept").value.trim(),
+    email:      document.getElementById("fEmail").value.trim(),
+    phone:      document.getElementById("fPhone").value.trim(),
+    maxLoad:    document.getElementById("fMaxLoad").value,
+    schedules:  collectSchedules()
+  };
+
+  const idx = document.getElementById("editIndex").value;
+  if (idx === "") {
+    faculty.push(data);
+  } else {
+    faculty[parseInt(idx)] = data;
+  }
+
+  closeModal();
+  renderFaculty();
+}
+
+/* ===== EDIT ===== */
+function editFaculty(i) {
+  const f = faculty[i];
+  document.getElementById("modalTitle").textContent = "Update Faculty";
+  document.getElementById("editIndex").value = i;
+  clearForm();
+
+  document.getElementById("fName").value    = f.name        || "";
+  document.getElementById("fDept").value    = f.department  || "";
+  document.getElementById("fEmail").value   = f.email       || "";
+  document.getElementById("fPhone").value   = f.phone       || "";
+  document.getElementById("fMaxLoad").value = f.maxLoad     || "";
+
+  (f.schedules || []).forEach(s => addSchedCard(s));
+  if (!(f.schedules || []).length) addSchedCard();
+
+  document.getElementById("modal").style.display = "flex";
+}
+
+/* ===== VIEW ===== */
+function viewFaculty(i) {
+  const f = faculty[i];
+  const totalUnits = (f.schedules || []).reduce((a, s) => a + (parseInt(s.units) || 0), 0);
+  const maxLoad    = parseInt(f.maxLoad) || 0;
+
+  const schedHtml = (f.schedules || []).length
+    ? f.schedules.map(s => `
+        <div class="sched-view-card">
+          <div class="sched-view-top">
+            <span class="sched-view-name">${s.subjectName || "—"}</span>
+            ${s.subjectCode ? `<span class="sched-view-code">${s.subjectCode}</span>` : ""}
+          </div>
+          <div style="font-size:12px;display:grid;grid-template-columns:1fr 1fr;gap:5px;">
+            <div><span style="color:#6b7280;font-size:11px;font-weight:600;display:block;">Units</span>${s.units || "—"}</div>
+            <div><span style="color:#6b7280;font-size:11px;font-weight:600;display:block;">Time</span>${s.time || "—"}</div>
+          </div>
+          <div style="margin-top:6px;">
+            <span style="color:#6b7280;font-size:11px;font-weight:600;display:block;">Days</span>
+            <div class="day-chips">
+              ${(s.days || []).map(d => `<span class="day-chip">${d}</span>`).join("") || "<span style='color:#9ca3af;font-size:12px;'>No days set</span>"}
+            </div>
+          </div>
+        </div>`).join("")
+    : `<div class="empty-note">No subjects assigned.</div>`;
+
+  document.getElementById("viewContent").innerHTML = `
+    <div class="view-section">
+      <div class="view-section-title">Personal Information</div>
+      <div class="info-grid">
+        <div class="info-item"><span class="lbl">Full Name</span><span class="val">${f.name}</span></div>
+        <div class="info-item"><span class="lbl">Department</span><span class="val">${f.department || "—"}</span></div>
+        <div class="info-item"><span class="lbl">Email</span><span class="val">${f.email || "—"}</span></div>
+        <div class="info-item"><span class="lbl">Phone</span><span class="val">${f.phone || "—"}</span></div>
+        <div class="info-item"><span class="lbl">Max Load</span><span class="val">${f.maxLoad || "—"} units</span></div>
+        <div class="info-item">
+          <span class="lbl">Current Load</span>
+          <span class="val" style="color:${maxLoad > 0 && totalUnits > maxLoad ? "#ef4444" : "#16a34a"};font-weight:700;">
+            ${totalUnits} units ${maxLoad > 0 && totalUnits > maxLoad ? "⚠️ Overloaded" : "✅ OK"}
+          </span>
+        </div>
+      </div>
+    </div>
+    <div class="view-section">
+      <div class="view-section-title">Subjects &amp; Schedules</div>
+      ${schedHtml}
+    </div>`;
+
+  document.getElementById("viewModal").style.display = "flex";
+}
+
+/* ===== DELETE ===== */
+function deleteFaculty(i) {
+  if (confirm("Delete this faculty record?")) {
+    faculty.splice(i, 1);
+    renderFaculty();
+  }
+}
+
+/* ===== HELPERS ===== */
+function closeModal()     { document.getElementById("modal").style.display = "none"; }
+function closeViewModal() { document.getElementById("viewModal").style.display = "none"; }
+function logout()         { window.location.href = "login.html"; }
+
+document.getElementById("modal").addEventListener("click", function(e)     { if (e.target === this) closeModal(); });
+document.getElementById("viewModal").addEventListener("click", function(e)  { if (e.target === this) closeViewModal(); });
+
+renderFaculty();
+</script>
+</body>
+</html>

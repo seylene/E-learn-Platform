@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Roles & Permissions</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="header">
+  <div class="logo"><img src="images/logo.png" class="logo-img"><small>Digital Academic Operating System</small></div>
+  <div class="user-info">Registrar | Ms. Ana Cruz <button class="logout-btn" onclick="logout()">Logout</button></div>
+</div>
+<div class="container">
+  <div class="sidebar">
+    <h4>REGISTRAR</h4>
+    <a href="registrar_profile.html">My Profile</a>
+    <a href="registrar_dashboard.html">Dashboard</a>
+    <a href="registrar_students.html">Student Records</a>
+    <a href="registrar_faculty.html">Faculty Records</a>
+    <a href="registrar_grades.html">Grade Evaluation</a>
+    <h4 style="margin-top:16px;font-size:10px;letter-spacing:1px;opacity:.7;">MANAGEMENT</h4>
+    <a href="registrar_college.html">Colleges</a>
+    <a href="registrar_course.html">Courses</a>
+    <a href="registrar_subject.html">Subjects</a>
+    <a href="registrar_yearlevel.html">Year Levels</a>
+    <a href="registrar_semester.html">Semesters</a>
+    <a href="registrar_section.html">Sections</a>
+    <a href="registrar_academic.html">Academic Year</a>
+    <h4 style="margin-top:16px;font-size:10px;letter-spacing:1px;opacity:.7;">RECORDS</h4>
+    <a href="registrar_parents.html">Parents</a>
+    <a href="registrar_employees.html">Employees</a>
+    <a href="registrar_admission.html">Admission</a>
+    <h4 style="margin-top:16px;font-size:10px;letter-spacing:1px;opacity:.7;">OTHERS</h4>
+    <a href="registrar_reports.html">Reports</a>
+    <a href="registrar_logs.html">User Logs</a>
+    <a href="registrar_roles.html" class="active">Roles & Permissions</a>
+  </div>
+  <div class="content">
+    <h2>Roles & Permissions</h2>
+    <div class="roles-wrap">
+      <div>
+        <div class="role-list" id="roleList"></div>
+        <button class="role-add-btn" onclick="addRole()" style="border-radius:0 0 12px 12px;border-top:none;">+ Add Role</button>
+      </div>
+      <div class="perm-panel" id="permPanel">
+        <div style="text-align:center;color:#9ca3af;padding:40px 0;">
+          <div style="font-size:36px;margin-bottom:8px;">🔐</div>
+          <div style="font-weight:700;">Select a role to manage permissions</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const PERM_GROUPS = {
+  "Student"     : ["view-student","create-student","edit-student","update-student","delete-student"],
+  "Faculty"     : ["view-teacher","create-teacher","edit-teacher","update-teacher","delete-teacher"],
+  "Grades"      : ["view-registrar-grades","create-registrar-grades","teacher-view-grades","teacher-create-grades","teacher-edit-grades","teacher-update-grades","teacher-delete-grades"],
+  "Courses"     : ["view-course","create-course","edit-course","update-course","delete-course"],
+  "Subjects"    : ["view-subject","create-subject","edit-subject","update-subject","delete-subject"],
+  "College"     : ["view-college","create-college","edit-college","update-college","delete-college"],
+  "Admission"   : ["view-admission","create-admission","edit-admission","update-admission","delete-admission"],
+  "Parent"      : ["view-parent","create-parent","edit-parent","update-parent","delete-parent"],
+  "Employee"    : ["view-employee","create-employee","edit-employee","update-employee","delete-employee"],
+  "Reports"     : ["view-registrar-reports","create-registrar-reports","edit-registrar-reports","update-registrar-reports","delete-registrar-reports"],
+  "User & Logs" : ["view-user-logs","view-roles-permissions","create-roles-permissions","edit-roles-permissions","update-roles-permissions","delete-roles-permissions"],
+  "System"      : ["view-school-info","edit-school-info","view-academic","create-academic","view-semester","create-semester","view-section","create-section","view-year-level","create-year-level"],
+};
+
+const DEFAULT_ROLES = [
+  { name:"Registrar", perms: Object.values(PERM_GROUPS).flat() },
+  { name:"Teacher",   perms: ["view-student","view-registrar-grades","teacher-view-grades","teacher-create-grades","teacher-edit-grades","teacher-update-grades","teacher-view-advisory","teacher-view-subject-load"] },
+  { name:"Student",   perms: ["student-view-schedules","student-view-soa","student-view-grades","student-view-payments"] },
+  { name:"Admin",     perms: Object.values(PERM_GROUPS).flat() },
+];
+
+let roles = JSON.parse(localStorage.getItem("roles")) || DEFAULT_ROLES;
+let selectedRole = 0;
+
+function saveRoles(){ localStorage.setItem("roles", JSON.stringify(roles)); }
+
+function renderRoleList(){
+  const list = document.getElementById("roleList");
+  list.innerHTML = roles.map((r,i)=>`
+    <div class="role-item ${i===selectedRole?'active':''}" onclick="selectRole(${i})">
+      <div>
+        <div class="role-name">${r.name}</div>
+        <div class="role-count">${(r.perms||[]).length} permissions</div>
+      </div>
+      ${i===selectedRole?`<span style="color:#2f4cff;font-size:16px;">›</span>`:''}
+    </div>`).join("");
+}
+
+function selectRole(i){
+  selectedRole = i;
+  renderRoleList();
+  renderPermPanel();
+}
+
+function renderPermPanel(){
+  const role = roles[selectedRole];
+  if(!role) return;
+  const panel = document.getElementById("permPanel");
+  const perms = new Set(role.perms||[]);
+
+  const groupsHtml = Object.entries(PERM_GROUPS).map(([group, ps])=>`
+    <div class="perm-group">
+      <div class="perm-group-title">${group}</div>
+      <div class="perm-grid">
+        ${ps.map(p=>`
+          <div class="perm-item ${perms.has(p)?'on':''}" onclick="togglePerm(${selectedRole},'${p}',this)">
+            <div class="perm-chk">${perms.has(p)?'✓':''}</div>
+            <span>${p}</span>
+          </div>`).join("")}
+      </div>
+    </div>`).join("");
+
+  panel.innerHTML = `
+    <div class="perm-panel-top">
+      <div class="perm-panel-title">🔐 ${role.name}</div>
+      <div style="display:flex;gap:8px;">
+        <button onclick="toggleAll(${selectedRole},true)" style="background:#eef2ff;color:#2f4cff;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;">✅ Select All</button>
+        <button onclick="toggleAll(${selectedRole},false)" style="background:#f3f4f6;color:#6b7280;border:none;border-radius:6px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer;">☐ Clear All</button>
+        <button class="btn-save-role" onclick="saveRolePerms()">💾 Save</button>
+        <button class="btn-del-role" onclick="deleteRole(${selectedRole})">🗑️ Delete</button>
+      </div>
+    </div>
+    ${groupsHtml}`;
+}
+
+function togglePerm(roleIdx, perm, el){
+  const r = roles[roleIdx];
+  const set = new Set(r.perms||[]);
+  if(set.has(perm)){ set.delete(perm); el.classList.remove("on"); el.querySelector(".perm-chk").textContent=""; }
+  else { set.add(perm); el.classList.add("on"); el.querySelector(".perm-chk").textContent="✓"; }
+  r.perms = [...set];
+  document.querySelector(`.role-item:nth-child(${roleIdx+1}) .role-count`).textContent = r.perms.length+" permissions";
+}
+
+function toggleAll(roleIdx, val){
+  roles[roleIdx].perms = val ? Object.values(PERM_GROUPS).flat() : [];
+  saveRoles(); renderRoleList(); renderPermPanel();
+}
+
+function saveRolePerms(){ saveRoles(); renderRoleList(); alert("✅ Permissions saved!"); }
+
+function addRole(){
+  const name = prompt("Enter new role name:");
+  if(!name||!name.trim()) return;
+  roles.push({ name:name.trim(), perms:[] });
+  selectedRole = roles.length-1;
+  saveRoles(); renderRoleList(); renderPermPanel();
+}
+
+function deleteRole(i){
+  if(roles.length<=1){ alert("Cannot delete the last role."); return; }
+  if(!confirm(`Delete role "${roles[i].name}"?`)) return;
+  roles.splice(i,1);
+  selectedRole = 0;
+  saveRoles(); renderRoleList(); renderPermPanel();
+}
+
+function logout(){ window.location.href="login.html"; }
+renderRoleList(); selectRole(0);
+</script>
+</body>
+</html>

@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>College Management</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="header">
+  <div class="logo"><img src="images/logo.png" class="logo-img"><small>Digital Academic Operating System</small></div>
+  <div class="user-info">Registrar | Ms. Ana Cruz <button class="logout-btn" onclick="logout()">Logout</button></div>
+</div>
+<div class="container">
+  <div class="sidebar">
+    <h4>REGISTRAR</h4>
+    <a href="registrar_profile.html">My Profile</a>
+    <a href="registrar_dashboard.html">Dashboard</a>
+    <a href="registrar_students.html">Student Records</a>
+    <a href="registrar_faculty.html">Faculty Records</a>
+    <a href="registrar_grades.html">Grade Evaluation</a>
+    <h4 style="margin-top:16px;font-size:10px;letter-spacing:1px;opacity:.7;">MANAGEMENT</h4>
+    <a href="registrar_college.html" class="active">Colleges</a>
+    <a href="registrar_course.html">Courses</a>
+    <a href="registrar_subject.html">Subjects</a>
+    <a href="registrar_yearlevel.html">Year Levels</a>
+    <a href="registrar_semester.html">Semesters</a>
+    <a href="registrar_section.html">Sections</a>
+    <a href="registrar_academic.html">Academic Year</a>
+    <h4 style="margin-top:16px;font-size:10px;letter-spacing:1px;opacity:.7;">RECORDS</h4>
+    <a href="registrar_parents.html">Parents</a>
+    <a href="registrar_employees.html">Employees</a>
+    <a href="registrar_admission.html">Admission</a>
+    <h4 style="margin-top:16px;font-size:10px;letter-spacing:1px;opacity:.7;">OTHERS</h4>
+    <a href="registrar_reports.html">Reports</a>
+    <a href="registrar_logs.html">User Logs</a>
+    <a href="registrar_roles.html">Roles & Permissions</a>
+  </div>
+  <div class="content">
+    <h2>College Management</h2>
+    <button class="add-btn" onclick="openModal()">+ Add College</button>
+    <div class="mgmt-stats">
+      <div class="mgmt-stat"><span class="si">🏛️</span><div><div class="sl">Colleges</div><div class="sv" id="statTotal">0</div></div></div>
+      <div class="mgmt-stat"><span class="si">📚</span><div><div class="sl">Courses</div><div class="sv" id="statCourses">0</div></div></div>
+      <div class="mgmt-stat"><span class="si">👤</span><div><div class="sl">Students</div><div class="sv" id="statStudents">0</div></div></div>
+    </div>
+    <div class="card-grid" id="collegeGrid"></div>
+  </div>
+</div>
+
+<div id="modal" class="modal">
+  <div class="modal-content" style="width:480px;">
+    <h3 id="modalTitle">Add College</h3>
+    <input type="hidden" id="editIndex">
+    <div class="modal-section">
+      <div class="modal-section-title">College Information</div>
+      <div class="form-row col2">
+        <div class="field"><label>College Name</label><input type="text" id="cName" placeholder="e.g. College of Engineering"></div>
+        <div class="field"><label>Abbreviation</label><input type="text" id="cAbbr" placeholder="e.g. COE"></div>
+      </div>
+      <div class="form-row col2">
+        <div class="field"><label>Dean</label><input type="text" id="cDean" placeholder="e.g. Dr. Juan Santos"></div>
+        <div class="field"><label>Color Theme</label><input type="color" id="cColor" value="#2f4cff" style="height:38px;padding:2px;margin-top:3px;width:100%;border:1px solid #d1d5db;border-radius:5px;"></div>
+      </div>
+      <div class="form-row">
+        <div class="field"><label>Description</label><input type="text" id="cDesc" placeholder="Brief description of the college"></div>
+      </div>
+    </div>
+    <button class="enroll-btn" onclick="saveCollege()">Save College</button>
+    <button class="danger enroll-btn" onclick="closeModal()" style="margin-top:8px;">Cancel</button>
+  </div>
+</div>
+
+<script>
+let colleges = JSON.parse(localStorage.getItem("colleges")) || [];
+
+function render() {
+  const courses  = JSON.parse(localStorage.getItem("courses"))  || [];
+  const students = JSON.parse(localStorage.getItem("students")) || [];
+  document.getElementById("statTotal").textContent    = colleges.length;
+  document.getElementById("statCourses").textContent  = courses.length;
+  document.getElementById("statStudents").textContent = students.filter(s=>s.enrolled).length;
+
+  const grid = document.getElementById("collegeGrid");
+  if (!colleges.length) {
+    grid.innerHTML = `<div class="empty-grid">No colleges yet. Click "+ Add College" to begin.</div>`;
+    return;
+  }
+  grid.innerHTML = colleges.map((c,i) => `
+    <div class="college-card">
+      <div class="cc-banner" style="background:${c.color||'#2f4cff'};"></div>
+      <div class="cc-body">
+        <div class="cc-top">
+          <div class="cc-name">${c.name}</div>
+          <span class="cc-abbr">${c.abbr||'—'}</span>
+        </div>
+        <div class="cc-dean">👤 ${c.dean||'No dean assigned'}</div>
+        <div class="cc-desc">${c.desc||'No description.'}</div>
+        <div class="cc-actions">
+          <button onclick="editCollege(${i})">✏️ Edit</button>
+          <button class="danger" onclick="deleteCollege(${i})">🗑️ Delete</button>
+        </div>
+      </div>
+    </div>`).join("");
+}
+
+function openModal(){ clearForm(); document.getElementById("modalTitle").textContent="Add College"; document.getElementById("modal").style.display="flex"; }
+function closeModal(){ document.getElementById("modal").style.display="none"; }
+function clearForm(){ ["cName","cAbbr","cDean","cDesc"].forEach(id=>document.getElementById(id).value=""); document.getElementById("cColor").value="#2f4cff"; document.getElementById("editIndex").value=""; }
+
+function saveCollege(){
+  const name = document.getElementById("cName").value.trim();
+  if(!name){ alert("College name is required."); return; }
+  const data = { name, abbr:document.getElementById("cAbbr").value.trim(), dean:document.getElementById("cDean").value.trim(), color:document.getElementById("cColor").value, desc:document.getElementById("cDesc").value.trim() };
+  const idx = document.getElementById("editIndex").value;
+  if(idx==="") colleges.push(data); else colleges[parseInt(idx)]=data;
+  localStorage.setItem("colleges", JSON.stringify(colleges));
+  closeModal(); render();
+}
+
+function editCollege(i){
+  const c = colleges[i];
+  document.getElementById("modalTitle").textContent = "Edit College";
+  document.getElementById("editIndex").value = i;
+  document.getElementById("cName").value  = c.name;
+  document.getElementById("cAbbr").value  = c.abbr||"";
+  document.getElementById("cDean").value  = c.dean||"";
+  document.getElementById("cColor").value = c.color||"#2f4cff";
+  document.getElementById("cDesc").value  = c.desc||"";
+  document.getElementById("modal").style.display="flex";
+}
+
+function deleteCollege(i){ if(confirm("Delete this college?")){ colleges.splice(i,1); localStorage.setItem("colleges",JSON.stringify(colleges)); render(); } }
+function logout(){ window.location.href="login.html"; }
+document.getElementById("modal").addEventListener("click",function(e){ if(e.target===this) closeModal(); });
+render();
+</script>
+</body>
+</html>

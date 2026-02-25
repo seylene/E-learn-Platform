@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Subject Management</title>
+<link rel="stylesheet" href="css/style.css">
+<body>
+<div class="header">
+  <div class="logo"><img src="images/logo.png" class="logo-img"><small>Digital Academic Operating System</small></div>
+  <div class="user-info">Registrar | Ms. Ana Cruz <button class="logout-btn" onclick="logout()">Logout</button></div>
+</div>
+<div class="container">
+  <div class="sidebar">
+    <h4>REGISTRAR</h4>
+    <a href="registrar_profile.html">My Profile</a>
+    <a href="registrar_dashboard.html">Dashboard</a>
+    <a href="registrar_students.html">Student Records</a>
+    <a href="registrar_faculty.html">Faculty Records</a>
+    <a href="registrar_grades.html">Grade Evaluation</a>
+    <h4 style="margin-top:16px;font-size:10px;letter-spacing:1px;opacity:.7;">MANAGEMENT</h4>
+    <a href="registrar_college.html">Colleges</a>
+    <a href="registrar_course.html">Courses</a>
+    <a href="registrar_subject.html" class="active">Subjects</a>
+    <a href="registrar_yearlevel.html">Year Levels</a>
+    <a href="registrar_semester.html">Semesters</a>
+    <a href="registrar_section.html">Sections</a>
+    <a href="registrar_academic.html">Academic Year</a>
+    <h4 style="margin-top:16px;font-size:10px;letter-spacing:1px;opacity:.7;">RECORDS</h4>
+    <a href="registrar_parents.html">Parents</a>
+    <a href="registrar_employees.html">Employees</a>
+    <a href="registrar_admission.html">Admission</a>
+    <h4 style="margin-top:16px;font-size:10px;letter-spacing:1px;opacity:.7;">OTHERS</h4>
+    <a href="registrar_reports.html">Reports</a>
+    <a href="registrar_logs.html">User Logs</a>
+    <a href="registrar_roles.html">Roles & Permissions</a>
+  </div>
+  <div class="content">
+    <h2>Subject Management</h2>
+    <button class="add-btn" onclick="openModal()">+ Add Subject</button>
+    <div class="mgmt-stats">
+      <div class="mgmt-stat"><span class="si">📖</span><div><div class="sl">Total Subjects</div><div class="sv" id="statTotal">0</div></div></div>
+      <div class="mgmt-stat"><span class="si">🧪</span><div><div class="sl">With Lab</div><div class="sv" id="statLab">0</div></div></div>
+      <div class="mgmt-stat"><span class="si">⚖️</span><div><div class="sl">Total Units</div><div class="sv" id="statUnits">0</div></div></div>
+    </div>
+    <div class="search-bar">
+      <input type="text" id="searchInput" placeholder="🔍 Search subject..." oninput="render()">
+      <select id="filterCourse" onchange="render()"><option value="">All Courses</option></select>
+      <select id="filterType" onchange="render()">
+        <option value="">All Types</option>
+        <option value="Lecture">Lecture</option>
+        <option value="Laboratory">Laboratory</option>
+        <option value="Lecture & Lab">Lecture & Lab</option>
+      </select>
+    </div>
+    <table>
+      <thead><tr><th>Subject Name</th><th>Code</th><th>Units</th><th>Type</th><th>Course</th><th>Year / Sem</th><th>Pre-requisite</th><th>Actions</th></tr></thead>
+      <tbody id="subjectTable"></tbody>
+    </table>
+  </div>
+</div>
+
+<div id="modal" class="modal">
+  <div class="modal-content" style="width:560px;">
+    <h3 id="modalTitle">Add Subject</h3>
+    <input type="hidden" id="editIndex">
+    <div class="modal-section">
+      <div class="modal-section-title">Subject Information</div>
+      <div class="form-row col2">
+        <div class="field"><label>Subject Name</label><input type="text" id="sName" placeholder="e.g. Programming 1"></div>
+        <div class="field"><label>Subject Code</label><input type="text" id="sCode" placeholder="e.g. IT101"></div>
+      </div>
+      <div class="form-row col3">
+        <div class="field"><label>Units</label><input type="number" id="sUnits" placeholder="3" min="0" value="3"></div>
+        <div class="field"><label>Type</label>
+          <select id="sType">
+            <option>Lecture</option>
+            <option>Laboratory</option>
+            <option>Lecture & Lab</option>
+          </select>
+        </div>
+        <div class="field"><label>Course</label><select id="sCourse"><option value="">-- Select --</option></select></div>
+      </div>
+      <div class="form-row col2">
+        <div class="field"><label>Year Level</label>
+          <select id="sYear">
+            <option value="1">1st Year</option><option value="2">2nd Year</option>
+            <option value="3">3rd Year</option><option value="4">4th Year</option>
+          </select>
+        </div>
+        <div class="field"><label>Semester</label>
+          <select id="sSem">
+            <option>1st Semester</option><option>2nd Semester</option><option>Summer</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="field"><label>Pre-requisite</label><input type="text" id="sPrereq" placeholder="e.g. IT100 or None"></div>
+      </div>
+      <div class="form-row">
+        <div class="field"><label>Description</label><input type="text" id="sDesc" placeholder="Brief description"></div>
+      </div>
+    </div>
+    <button class="enroll-btn" onclick="saveSubject()">Save Subject</button>
+    <button class="danger enroll-btn" onclick="closeModal()" style="margin-top:8px;">Cancel</button>
+  </div>
+</div>
+
+<script>
+let subjects = JSON.parse(localStorage.getItem("masterSubjects")) || [];
+
+function populateCourses(){
+  const courses = JSON.parse(localStorage.getItem("courses"))||[];
+  const sel = document.getElementById("sCourse");
+  const filt= document.getElementById("filterCourse");
+  sel.innerHTML  = `<option value="">-- Select Course --</option>` + courses.map(c=>`<option>${c.name}</option>`).join("");
+  filt.innerHTML = `<option value="">All Courses</option>`         + courses.map(c=>`<option>${c.name}</option>`).join("");
+}
+
+function render(){
+  document.getElementById("statTotal").textContent = subjects.length;
+  document.getElementById("statLab").textContent   = subjects.filter(s=>s.type&&s.type.includes("Lab")).length;
+  document.getElementById("statUnits").textContent = subjects.reduce((a,s)=>a+(parseInt(s.units)||0),0);
+
+  const search = document.getElementById("searchInput").value.toLowerCase();
+  const course = document.getElementById("filterCourse").value;
+  const type   = document.getElementById("filterType").value;
+  const filtered = subjects.map((s,i)=>({...s,_idx:i})).filter(s=>{
+    if(search && !s.name.toLowerCase().includes(search) && !(s.code||"").toLowerCase().includes(search)) return false;
+    if(course && s.course!==course) return false;
+    if(type   && s.type!==type)     return false;
+    return true;
+  });
+
+  const typeBadge = t => {
+    if(!t) return "—";
+    const cls = t.includes("Lab")&&t.includes("Lec")?"type-both":t==="Laboratory"?"type-lab":"type-lec";
+    return `<span class="type-badge ${cls}">${t}</span>`;
+  };
+
+  const tbody = document.getElementById("subjectTable");
+  if(!filtered.length){ tbody.innerHTML=`<tr><td colspan="8" class="empty-note">No subjects found.</td></tr>`; return; }
+  tbody.innerHTML = filtered.map(s=>`
+    <tr>
+      <td><strong>${s.name}</strong>${s.desc?`<div style="font-size:11px;color:#9ca3af;">${s.desc}</div>`:''}</td>
+      <td><span style="background:#eef2ff;color:#2f4cff;font-weight:700;font-size:11px;padding:2px 8px;border-radius:20px;">${s.code||'—'}</span></td>
+      <td style="text-align:center;font-weight:700;">${s.units||0}</td>
+      <td>${typeBadge(s.type)}</td>
+      <td style="font-size:12px;">${s.course||'—'}</td>
+      <td style="font-size:12px;">${s.year?s.year+'th Yr':''} ${s.sem||''}</td>
+      <td style="font-size:12px;color:#6b7280;">${s.prereq||'None'}</td>
+      <td>
+        <button onclick="editSubject(${s._idx})">Edit</button>
+        <button class="danger" onclick="deleteSubject(${s._idx})">Delete</button>
+      </td>
+    </tr>`).join("");
+}
+
+function openModal(){ clearForm(); document.getElementById("modalTitle").textContent="Add Subject"; document.getElementById("modal").style.display="flex"; }
+function closeModal(){ document.getElementById("modal").style.display="none"; }
+function clearForm(){ ["sName","sCode","sPrereq","sDesc"].forEach(id=>document.getElementById(id).value=""); document.getElementById("sUnits").value=3; document.getElementById("sType").value="Lecture"; document.getElementById("sYear").value="1"; document.getElementById("sSem").value="1st Semester"; document.getElementById("sCourse").value=""; document.getElementById("editIndex").value=""; }
+
+function saveSubject(){
+  const name = document.getElementById("sName").value.trim();
+  if(!name){ alert("Subject name is required."); return; }
+  const data = { name, code:document.getElementById("sCode").value.trim(), units:document.getElementById("sUnits").value, type:document.getElementById("sType").value, course:document.getElementById("sCourse").value, year:document.getElementById("sYear").value, sem:document.getElementById("sSem").value, prereq:document.getElementById("sPrereq").value.trim(), desc:document.getElementById("sDesc").value.trim() };
+  const idx = document.getElementById("editIndex").value;
+  if(idx==="") subjects.push(data); else subjects[parseInt(idx)]=data;
+  localStorage.setItem("masterSubjects", JSON.stringify(subjects));
+  closeModal(); render();
+}
+
+function editSubject(i){
+  const s = subjects[i];
+  document.getElementById("modalTitle").textContent="Edit Subject";
+  document.getElementById("editIndex").value=i;
+  document.getElementById("sName").value   = s.name;
+  document.getElementById("sCode").value   = s.code||"";
+  document.getElementById("sUnits").value  = s.units||3;
+  document.getElementById("sType").value   = s.type||"Lecture";
+  document.getElementById("sCourse").value = s.course||"";
+  document.getElementById("sYear").value   = s.year||"1";
+  document.getElementById("sSem").value    = s.sem||"1st Semester";
+  document.getElementById("sPrereq").value = s.prereq||"";
+  document.getElementById("sDesc").value   = s.desc||"";
+  document.getElementById("modal").style.display="flex";
+}
+
+function deleteSubject(i){ if(confirm("Delete this subject?")){ subjects.splice(i,1); localStorage.setItem("masterSubjects",JSON.stringify(subjects)); render(); } }
+function logout(){ window.location.href="login.html"; }
+document.getElementById("modal").addEventListener("click",function(e){ if(e.target===this) closeModal(); });
+populateCourses(); render();
+</script>
+</body>
+</html>

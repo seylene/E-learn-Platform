@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>User Logs</title>
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<div class="header">
+  <div class="logo"><img src="images/logo.png" class="logo-img"><small>Digital Academic Operating System</small></div>
+  <div class="user-info">Registrar | Ms. Ana Cruz <button class="logout-btn" onclick="logout()">Logout</button></div>
+</div>
+<div class="container">
+  <div class="sidebar">
+    <h3>REGISTRAR</h3>
+    <a href="registrar_profile.html">My Profile</a>
+    <a href="registrar_dashboard.html">Dashboard</a>
+    <a href="registrar_students.html">Student Records</a>
+    <a href="registrar_faculty.html">Faculty Records</a>
+    <a href="registrar_grades.html">Grade Evaluation</a>
+    <h4 style="margin-top:16px;font-size:10px;letter-spacing:1px;opacity:.7;">MANAGEMENT</h4>
+    <a href="registrar_college.html">Colleges</a>
+    <a href="registrar_course.html">Courses</a>
+    <a href="registrar_subject.html">Subjects</a>
+    <a href="registrar_yearlevel.html">Year Levels</a>
+    <a href="registrar_semester.html">Semesters</a>
+    <a href="registrar_section.html">Sections</a>
+    <a href="registrar_academic.html">Academic Year</a>
+    <h4 style="margin-top:16px;font-size:10px;letter-spacing:1px;opacity:.7;">RECORDS</h4>
+    <a href="registrar_parents.html">Parents</a>
+    <a href="registrar_employees.html">Employees</a>
+    <a href="registrar_admission.html">Admission</a>
+    <h4 style="margin-top:16px;font-size:10px;letter-spacing:1px;opacity:.7;">OTHERS</h4>
+    <a href="registrar_reports.html">Reports</a>
+    <a href="registrar_logs.html" class="active">User Logs</a>
+    <a href="registrar_roles.html">Roles & Permissions</a>
+  </div>
+  <div class="content">
+    <h2>User Logs</h2>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
+      <p class="subtitle" style="margin:0;">Audit trail of all system activities.</p>
+      <div style="display:flex;gap:8px;">
+        <button onclick="addSampleLogs()" style="background:#eef2ff;color:#2f4cff;border:none;">+ Add Sample Logs</button>
+        <button class="danger" onclick="clearLogs()">🗑️ Clear All Logs</button>
+      </div>
+    </div>
+    <div class="mgmt-stats">
+      <div class="mgmt-stat"><span class="si">📋</span><div><div class="sl">Total Logs</div><div class="sv" id="statTotal">0</div></div></div>
+      <div class="mgmt-stat"><span class="si">➕</span><div><div class="sl">Add Actions</div><div class="sv" id="statAdd" style="color:#16a34a;">0</div></div></div>
+      <div class="mgmt-stat"><span class="si">✏️</span><div><div class="sl">Edit Actions</div><div class="sv" id="statEdit" style="color:#2f4cff;">0</div></div></div>
+      <div class="mgmt-stat"><span class="si">🗑️</span><div><div class="sl">Delete Actions</div><div class="sv" id="statDelete" style="color:#dc2626;">0</div></div></div>
+    </div>
+    <div class="search-bar">
+      <input type="text" id="searchInput" placeholder="🔍 Search logs..." oninput="render()">
+      <select id="filterType" onchange="render()">
+        <option value="">All Actions</option>
+        <option value="add">Add</option>
+        <option value="edit">Edit</option>
+        <option value="delete">Delete</option>
+        <option value="login">Login</option>
+        <option value="other">Other</option>
+      </select>
+      <select id="filterModule" onchange="render()">
+        <option value="">All Modules</option>
+        <option value="Student">Student</option>
+        <option value="Faculty">Faculty</option>
+        <option value="Grades">Grades</option>
+        <option value="College">College</option>
+        <option value="Course">Course</option>
+        <option value="Subject">Subject</option>
+        <option value="Admission">Admission</option>
+        <option value="System">System</option>
+      </select>
+    </div>
+    <table>
+      <thead><tr><th>Action</th><th>Module</th><th>Details</th><th>User</th><th>Date & Time</th></tr></thead>
+      <tbody id="logsTable"></tbody>
+    </table>
+  </div>
+</div>
+<script>
+let logs = JSON.parse(localStorage.getItem("userLogs")) || [];
+
+// Auto-log helper — call this from other pages: logAction("add","Student","Added Juan Dela Cruz")
+window.logAction = function(type, module, details){
+  const entry = { type, module, details, user:"Ms. Ana Cruz (Registrar)", time: new Date().toISOString() };
+  logs.unshift(entry);
+  if(logs.length>500) logs = logs.slice(0,500);
+  localStorage.setItem("userLogs", JSON.stringify(logs));
+};
+
+function render(){
+  document.getElementById("statTotal").textContent  = logs.length;
+  document.getElementById("statAdd").textContent    = logs.filter(l=>l.type==="add").length;
+  document.getElementById("statEdit").textContent   = logs.filter(l=>l.type==="edit").length;
+  document.getElementById("statDelete").textContent = logs.filter(l=>l.type==="delete").length;
+
+  const search = document.getElementById("searchInput").value.toLowerCase();
+  const type   = document.getElementById("filterType").value;
+  const module = document.getElementById("filterModule").value;
+  const filtered = logs.filter(l=>{
+    if(search  && !(l.details||"").toLowerCase().includes(search) && !(l.module||"").toLowerCase().includes(search)) return false;
+    if(type    && l.type!==type)     return false;
+    if(module  && l.module!==module) return false;
+    return true;
+  });
+
+  const dotCls = t => `log-${["add","edit","delete","login"].includes(t)?t:"other"}`;
+  const tbody = document.getElementById("logsTable");
+  if(!filtered.length){ tbody.innerHTML=`<tr><td colspan="5" class="empty-note">No logs found.</td></tr>`; return; }
+  tbody.innerHTML = filtered.map(l=>{
+    const t = new Date(l.time).toLocaleString("en-PH",{dateStyle:"medium",timeStyle:"short"});
+    const actionLabel = l.type.charAt(0).toUpperCase()+l.type.slice(1);
+    return `<tr>
+      <td><span class="log-dot ${dotCls(l.type)}"></span><strong>${actionLabel}</strong></td>
+      <td><span style="background:#eef2ff;color:#2f4cff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;">${l.module||'System'}</span></td>
+      <td style="font-size:12px;">${l.details||'—'}</td>
+      <td style="font-size:12px;color:#6b7280;">${l.user||'—'}</td>
+      <td style="font-size:12px;color:#9ca3af;white-space:nowrap;">${t}</td>
+    </tr>`;
+  }).join("");
+}
+
+function addSampleLogs(){
+  const samples = [
+    {type:"login",  module:"System",    details:"Registrar logged in"},
+    {type:"add",    module:"Student",   details:"Added student: Juan Dela Cruz (2025-001)"},
+    {type:"edit",   module:"Student",   details:"Updated student: Maria Santos (2024-050)"},
+    {type:"add",    module:"Faculty",   details:"Added faculty: Mr. Jose Reyes"},
+    {type:"add",    module:"Grades",    details:"Saved grades for Juan Dela Cruz"},
+    {type:"other",  module:"Grades",    details:"Approved grades for Maria Santos"},
+    {type:"delete", module:"Admission", details:"Deleted applicant: Pedro Cruz"},
+    {type:"add",    module:"College",   details:"Added college: College of Engineering"},
+    {type:"add",    module:"Course",    details:"Added course: BSIT"},
+    {type:"edit",   module:"Subject",   details:"Updated subject: Programming 1"},
+  ];
+  samples.forEach(s=>{ logs.unshift({...s,user:"Ms. Ana Cruz (Registrar)",time:new Date(Date.now()-Math.random()*86400000*7).toISOString()}); });
+  localStorage.setItem("userLogs", JSON.stringify(logs));
+  render();
+}
+
+function clearLogs(){ if(confirm("Clear all logs? This cannot be undone.")){ logs=[]; localStorage.setItem("userLogs",JSON.stringify(logs)); render(); } }
+function logout(){ logAction("login","System","Registrar logged out"); window.location.href="login.html"; }
+render();
+</script>
+</body>
+</html>
