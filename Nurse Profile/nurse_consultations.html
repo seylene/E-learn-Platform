@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Consultations Nurse</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="logo"> e-learn<small>Health Services Module</small></div>
+  <div class="menu">
+    <div class="menu-title">Profile</div>
+    <a href="nurse_profile.html">👤 My Profile</a>
+    <div class="menu-title">Health Services</div>
+    <a href="nurse_dashboard.html">📊 Dashboard</a>
+    <a href="nurse_records.html">📋 Health Records</a>
+    <a href="nurse_inventory.html">💊 Medicine Inventory</a>
+    <a href="nurse_dispensing.html">📦 Dispensing Log</a>
+    <a href="nurse_patient_profiles.html">🧑‍⚕️ Patient Profiles</a>
+    <a href="nurse_consultations.html" class="active">🗓 Consultations</a>
+  </div>
+</div>
+
+<div class="main">
+  <div class="header">
+    <div>
+      <h2>🗓 Consultations</h2>
+      <div style="font-size:13px;color:#6b7280;">Walk-in and scheduled consultation requests</div>
+    </div>
+    <div class="header-right">
+      <div class="nurse-name" id="headerName">Ana Lopez</div>
+      <div class="nurse-role">School Nurse</div>
+      <button class="logout-btn" onclick="location.href='login.html'">Logout</button>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="page-title">Consultation Requests</div>
+    <div class="page-sub">Manage pending and approved consultations for students, faculty, and staff</div>
+
+    <div class="card">
+      <div class="card-header">
+        <h3>🗓 All Requests</h3>
+        <button class="btn" onclick="openModal('conModal')">+ Add Walk-in</button>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th><th>Type</th><th>Concern</th>
+            <th>Date</th><th>Status</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="conTable"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div id="conModal" class="modal">
+  <div class="modal-box">
+    <div class="modal-head"><h3>🗓 Add Consultation Request</h3><p>Walk-in or manual entry</p></div>
+    <div class="modal-body">
+      <div class="form-row col2">
+        <div class="form-group"><label>Full Name</label><input type="text" id="c-name" placeholder="Full name"></div>
+        <div class="form-group">
+          <label>Type</label>
+          <select id="c-type"><option value="">Select</option><option>Student</option><option>Faculty</option><option>Staff</option></select>
+        </div>
+      </div>
+      <div class="form-group"><label>Concern / Reason</label><input type="text" id="c-concern" placeholder="e.g. Medical Clearance, Fever, General Checkup"></div>
+      <div class="form-group"><label>Preferred Date</label><input type="date" id="c-date"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="saveConsult()">Save Request</button>
+      <button class="btn outline" onclick="closeModal('conModal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var p = JSON.parse(localStorage.getItem('nurseProfile')) || {};
+  if (p.name) document.getElementById('headerName').textContent = p.name;
+})();
+
+function log(type, msg) {
+  var logs = JSON.parse(localStorage.getItem('nurseActivity')) || [];
+  logs.unshift({ type: type, msg: msg, time: new Date().toISOString() });
+  localStorage.setItem('nurseActivity', JSON.stringify(logs.slice(0, 50)));
+}
+
+function badge(t) {
+  return t === 'Student' ? 'teal' : t === 'Faculty' ? 'blue' : t === 'Staff' ? 'amber' : 'gray';
+}
+
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+  document.querySelectorAll('#' + id + ' input, #' + id + ' select').forEach(function(el) {
+    if (el.type !== 'hidden') el.value = '';
+  });
+}
+document.querySelectorAll('.modal').forEach(function(m) {
+  m.addEventListener('click', function(e) { if (e.target === m) closeModal(m.id); });
+});
+
+function renderTable() {
+  var data = JSON.parse(localStorage.getItem('nurseConsults')) || [];
+  var tb   = document.getElementById('conTable');
+  if (!data.length) {
+    tb.innerHTML = '<tr class="empty-row"><td colspan="6">No consultation requests yet.</td></tr>'; return;
+  }
+  tb.innerHTML = data.map(function(c, i) {
+    var sb = c.status === 'Approved'
+      ? '<span class="badge green">Approved</span>'
+      : '<span class="badge amber">Pending</span>';
+    return '<tr>'
+      + '<td><strong>' + c.name + '</strong></td>'
+      + '<td><span class="badge ' + badge(c.type) + '">' + (c.type || '—') + '</span></td>'
+      + '<td>' + c.concern + '</td>'
+      + '<td style="font-size:12px;">' + (c.date || '—') + '</td>'
+      + '<td>' + sb + '</td>'
+      + '<td><div class="btn-group">'
+      + (c.status !== 'Approved' ? '<button class="btn sm" onclick="approve(' + i + ')">✓ Approve</button>' : '')
+      + '<button class="btn sm red" onclick="remove(' + i + ')">Delete</button>'
+      + '</div></td></tr>';
+  }).join('');
+}
+
+function saveConsult() {
+  var name    = document.getElementById('c-name').value.trim();
+  var concern = document.getElementById('c-concern').value.trim();
+  if (!name || !concern) { alert('Please fill in name and concern.'); return; }
+  var data = JSON.parse(localStorage.getItem('nurseConsults')) || [];
+  data.unshift({
+    name: name, type: document.getElementById('c-type').value,
+    concern: concern,
+    date: document.getElementById('c-date').value || new Date().toLocaleDateString(),
+    status: 'Pending'
+  });
+  localStorage.setItem('nurseConsults', JSON.stringify(data));
+  log('consult', 'New consultation: ' + name + ' — ' + concern);
+  closeModal('conModal');
+  renderTable();
+}
+
+function approve(i) {
+  var data = JSON.parse(localStorage.getItem('nurseConsults')) || [];
+  data[i].status = 'Approved';
+  localStorage.setItem('nurseConsults', JSON.stringify(data));
+  log('consult', 'Approved consultation: ' + data[i].name);
+  renderTable();
+}
+
+function remove(i) {
+  if (!confirm('Delete this consultation request?')) return;
+  var data = JSON.parse(localStorage.getItem('nurseConsults')) || [];
+  data.splice(i, 1);
+  localStorage.setItem('nurseConsults', JSON.stringify(data));
+  renderTable();
+}
+
+renderTable();
+</script>
+</body>
+</html>

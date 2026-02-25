@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Patient Profiles  Nurse</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="logo"> e-learn<small>Health Services Module</small></div>
+  <div class="menu">
+    <div class="menu-title">Profile</div>
+    <a href="nurse_profile.html">👤 My Profile</a>
+    <div class="menu-title">Health Services</div>
+    <a href="nurse_dashboard.html">📊 Dashboard</a>
+    <a href="nurse_records.html">📋 Health Records</a>
+    <a href="nurse_inventory.html">💊 Medicine Inventory</a>
+    <a href="nurse_dispensing.html">📦 Dispensing Log</a>
+    <a href="nurse_patient_profiles.html" class="active">🧑‍⚕️ Patient Profiles</a>
+    <a href="nurse_consultations.html">🗓 Consultations</a>
+  </div>
+</div>
+
+<div class="main">
+  <div class="header">
+    <div>
+      <h2>🧑‍⚕️ Patient Profiles</h2>
+      <div style="font-size:13px;color:#6b7280;">Health profiles with allergies, blood type, and conditions</div>
+    </div>
+    <div class="header-right">
+      <div class="nurse-name" id="headerName">Ana Lopez</div>
+      <div class="nurse-role">School Nurse</div>
+      <button class="logout-btn" onclick="location.href='login.html'">Logout</button>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="page-title">Patient Profiles</div>
+    <div class="page-sub">Maintain health profiles for students, faculty, and staff</div>
+
+    <div class="card">
+      <div class="card-header">
+        <button class="btn" onclick="openModal('profModal')">+ Add Profile</button>
+        <input class="search-input" placeholder="🔍 Search name..." oninput="renderTable(this.value)" style="margin:0;">
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th><th>Type</th><th>Blood Type</th>
+            <th>Allergies</th><th>Conditions</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="profTable"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div id="profModal" class="modal">
+  <div class="modal-box">
+    <div class="modal-head"><h3>🧑‍⚕️ Patient Health Profile</h3><p>Personal health information</p></div>
+    <div class="modal-body">
+      <input type="hidden" id="p-idx">
+      <div class="form-row col2">
+        <div class="form-group"><label>Full Name</label><input type="text" id="p-name" placeholder="Full name"></div>
+        <div class="form-group">
+          <label>Type</label>
+          <select id="p-type"><option value="">Select</option><option>Student</option><option>Faculty</option><option>Staff</option></select>
+        </div>
+      </div>
+      <div class="form-row col3">
+        <div class="form-group">
+          <label>Blood Type</label>
+          <select id="p-blood">
+            <option value="">Unknown</option>
+            <option>A+</option><option>A-</option><option>B+</option><option>B-</option>
+            <option>AB+</option><option>AB-</option><option>O+</option><option>O-</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Age</label><input type="number" id="p-age" placeholder="e.g. 18" min="1"></div>
+        <div class="form-group">
+          <label>Gender</label>
+          <select id="p-gender"><option value="">Select</option><option>Male</option><option>Female</option><option>Prefer not to say</option></select>
+        </div>
+      </div>
+      <div class="form-group"><label>Known Allergies</label><input type="text" id="p-allergy" placeholder="e.g. Penicillin, Peanuts, None"></div>
+      <div class="form-group"><label>Existing Medical Conditions</label><input type="text" id="p-cond" placeholder="e.g. Asthma, Diabetes, None"></div>
+      <div class="form-group"><label>Current Medications (if any)</label><input type="text" id="p-meds" placeholder="e.g. Metformin, None"></div>
+      <div class="form-group"><label>Emergency Contact</label><input type="text" id="p-emer" placeholder="e.g. Maria Dela Cruz – 09XX-XXX-XXXX"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="saveProfile()">Save Profile</button>
+      <button class="btn outline" onclick="closeModal('profModal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var p = JSON.parse(localStorage.getItem('nurseProfile')) || {};
+  if (p.name) document.getElementById('headerName').textContent = p.name;
+})();
+
+function log(type, msg) {
+  var logs = JSON.parse(localStorage.getItem('nurseActivity')) || [];
+  logs.unshift({ type: type, msg: msg, time: new Date().toISOString() });
+  localStorage.setItem('nurseActivity', JSON.stringify(logs.slice(0, 50)));
+}
+
+function badge(t) {
+  return t === 'Student' ? 'teal' : t === 'Faculty' ? 'blue' : t === 'Staff' ? 'amber' : 'gray';
+}
+
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+  document.querySelectorAll('#' + id + ' input, #' + id + ' select').forEach(function(el) {
+    if (el.type !== 'hidden') el.value = '';
+  });
+}
+document.querySelectorAll('.modal').forEach(function(m) {
+  m.addEventListener('click', function(e) { if (e.target === m) closeModal(m.id); });
+});
+
+function renderTable(filter) {
+  var data = JSON.parse(localStorage.getItem('nurseProfiles')) || [];
+  if (filter) data = data.filter(function(p) {
+    return p.name.toLowerCase().includes(filter.toLowerCase());
+  });
+  var tb = document.getElementById('profTable');
+  if (!data.length) {
+    tb.innerHTML = '<tr class="empty-row"><td colspan="6">No patient profiles yet.</td></tr>'; return;
+  }
+  tb.innerHTML = data.map(function(p, i) {
+    return '<tr>'
+      + '<td><strong>' + p.name + '</strong>'
+      + (p.age ? '<br><span style="font-size:11px;color:#6b7280;">' + p.age + ' yrs, ' + (p.gender || '—') + '</span>' : '')
+      + '</td>'
+      + '<td><span class="badge ' + badge(p.type) + '">' + (p.type || '—') + '</span></td>'
+      + '<td><strong style="color:' + (p.blood ? '#0f6b5e' : '#9ca3af') + ';">' + (p.blood || 'Unknown') + '</strong></td>'
+      + '<td style="font-size:12px;">' + (p.allergy || 'None') + '</td>'
+      + '<td style="font-size:12px;">' + (p.cond || 'None') + '</td>'
+      + '<td><div class="btn-group">'
+      + '<button class="btn sm outline" onclick="editProfile(' + i + ')">Edit</button>'
+      + '<button class="btn sm red" onclick="deleteProfile(' + i + ')">Delete</button>'
+      + '</div></td></tr>';
+  }).join('');
+}
+
+function saveProfile() {
+  var name = document.getElementById('p-name').value.trim();
+  if (!name) { alert('Please enter a name.'); return; }
+  var data  = JSON.parse(localStorage.getItem('nurseProfiles')) || [];
+  var idx   = document.getElementById('p-idx').value;
+  var entry = {
+    name:    name,
+    type:    document.getElementById('p-type').value,
+    blood:   document.getElementById('p-blood').value,
+    age:     document.getElementById('p-age').value,
+    gender:  document.getElementById('p-gender').value,
+    allergy: document.getElementById('p-allergy').value.trim(),
+    cond:    document.getElementById('p-cond').value.trim(),
+    meds:    document.getElementById('p-meds').value.trim(),
+    emer:    document.getElementById('p-emer').value.trim()
+  };
+  if (idx === '') { data.push(entry); log('profile', 'Added profile: ' + name); }
+  else            { data[parseInt(idx)] = entry; log('profile', 'Updated profile: ' + name); }
+  localStorage.setItem('nurseProfiles', JSON.stringify(data));
+  closeModal('profModal');
+  renderTable();
+}
+
+function editProfile(i) {
+  var p = (JSON.parse(localStorage.getItem('nurseProfiles')) || [])[i];
+  document.getElementById('p-idx').value    = i;
+  document.getElementById('p-name').value   = p.name;
+  document.getElementById('p-type').value   = p.type    || '';
+  document.getElementById('p-blood').value  = p.blood   || '';
+  document.getElementById('p-age').value    = p.age     || '';
+  document.getElementById('p-gender').value = p.gender  || '';
+  document.getElementById('p-allergy').value= p.allergy || '';
+  document.getElementById('p-cond').value   = p.cond    || '';
+  document.getElementById('p-meds').value   = p.meds    || '';
+  document.getElementById('p-emer').value   = p.emer    || '';
+  openModal('profModal');
+}
+
+function deleteProfile(i) {
+  if (!confirm('Delete this patient profile?')) return;
+  var data = JSON.parse(localStorage.getItem('nurseProfiles')) || [];
+  log('profile', 'Deleted profile: ' + data[i].name);
+  data.splice(i, 1);
+  localStorage.setItem('nurseProfiles', JSON.stringify(data));
+  renderTable();
+}
+
+renderTable();
+</script>
+</body>
+</html>

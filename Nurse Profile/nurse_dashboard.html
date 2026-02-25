@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Dashboard Nurse</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="logo">e-learn<small>Health Services Module</small></div>
+  <div class="menu">
+    <div class="menu-title">Profile</div>
+    <a href="nurse_profile.html">👤 My Profile</a>
+    <div class="menu-title">Health Services</div>
+    <a href="nurse_dashboard.html" class="active">📊 Dashboard</a>
+    <a href="nurse_records.html">📋 Health Records</a>
+    <a href="nurse_inventory.html">💊 Medicine Inventory</a>
+    <a href="nurse_dispensing.html">📦 Dispensing Log</a>
+    <a href="nurse_patient_profiles.html">🧑‍⚕️ Patient Profiles</a>
+    <a href="nurse_consultations.html">🗓 Consultations</a>
+  </div>
+</div>
+
+<div class="main">
+  <div class="header">
+    <div>
+      <h2>📊 Dashboard</h2>
+      <div style="font-size:13px;color:#6b7280;">Health clinic overview</div>
+    </div>
+    <div class="header-right">
+      <div class="nurse-name" id="headerName">Janine Doe</div>
+      <div class="nurse-role">School Nurse</div>
+      <button class="logout-btn" onclick="location.href='login.html'">Logout</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- WELCOME BANNER -->
+    <div class="welcome-banner">
+      <div class="welcome-text">
+        <h2>Welcome back, <span id="nurseName">Ana Lopez</span>! 👋</h2>
+        <p id="todayDate"></p>
+        <p style="margin-top:6px;color:rgba(255,255,255,0.55);font-size:12px;">Here's your clinic overview for today.</p>
+      </div>
+    </div>
+
+    <!-- SUMMARY CARDS -->
+    <div class="summary-row" style="margin-bottom:24px;">
+      <div class="sum-card green"><div class="s-icon">📋</div><div class="s-count" id="sc-records">0</div><div class="s-label">Health Records</div></div>
+      <div class="sum-card blue"><div class="s-icon">🗓</div><div class="s-count" id="sc-consults">0</div><div class="s-label">Pending Consults</div></div>
+      <div class="sum-card amber"><div class="s-icon">💊</div><div class="s-count" id="sc-medicines">0</div><div class="s-label">Medicine Types</div></div>
+      <div class="sum-card red"><div class="s-icon">⚠️</div><div class="s-count" id="sc-lowstock">0</div><div class="s-label">Low Stock / Expiring</div></div>
+      <div class="sum-card green"><div class="s-icon">📦</div><div class="s-count" id="sc-dispensed">0</div><div class="s-label">Dispensed Today</div></div>
+      <div class="sum-card blue"><div class="s-icon">🧑‍⚕️</div><div class="s-count" id="sc-profiles">0</div><div class="s-label">Patient Profiles</div></div>
+    </div>
+
+    <!-- OVERVIEW TABLES -->
+    <div class="overview-grid">
+
+      <div class="ov-card">
+        <div class="ov-head"><span>📋</span><h3>Recent Visits</h3><a href="nurse_records.html">View All →</a></div>
+        <table class="ov-table">
+          <thead><tr><th>Name</th><th>Type</th><th>Concern</th><th>Date</th></tr></thead>
+          <tbody id="tbl-records"></tbody>
+        </table>
+      </div>
+
+      <div class="ov-card">
+        <div class="ov-head"><span>🗓</span><h3>Pending Consultations</h3><a href="nurse_consultations.html">View All →</a></div>
+        <table class="ov-table">
+          <thead><tr><th>Name</th><th>Type</th><th>Concern</th><th>Date</th></tr></thead>
+          <tbody id="tbl-consults"></tbody>
+        </table>
+      </div>
+
+      <div class="ov-card">
+        <div class="ov-head"><span>⚠️</span><h3>Low Stock / Expiring Soon</h3><a href="nurse_inventory.html">View All →</a></div>
+        <table class="ov-table">
+          <thead><tr><th>Medicine</th><th>Qty</th><th>Expiry</th><th>Status</th></tr></thead>
+          <tbody id="tbl-stock"></tbody>
+        </table>
+      </div>
+
+      <div class="ov-card">
+        <div class="ov-head"><span>📦</span><h3>Dispensed Today</h3><a href="nurse_dispensing.html">View All →</a></div>
+        <table class="ov-table">
+          <thead><tr><th>Recipient</th><th>Medicine</th><th>Qty</th><th>Time</th></tr></thead>
+          <tbody id="tbl-dispensed"></tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var p    = JSON.parse(localStorage.getItem('nurseProfile')) || {};
+  var name = p.name || 'Ana Lopez';
+  document.getElementById('headerName').textContent = name;
+  document.getElementById('nurseName').textContent  = name;
+  var d    = new Date();
+  var days = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  document.getElementById('todayDate').textContent  =
+    days[d.getDay()] + ', ' + d.toLocaleDateString('en-US',{year:'numeric',month:'long',day:'numeric'});
+})();
+
+function mkBadge(t) {
+  var bg = t==='Student'?'#ccfbf1' : t==='Faculty'?'#dbeafe' : t==='Staff'?'#fef3c7' : '#f1f5f9';
+  var cl = t==='Student'?'#0f766e' : t==='Faculty'?'#2563eb' : t==='Staff'?'#d97706' : '#64748b';
+  return '<span style="background:'+bg+';color:'+cl+';font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;">'+(t||'—')+'</span>';
+}
+
+function mkPill(label, color) {
+  var bg = color==='red' ? '#fee2e2' : '#fef3c7';
+  var cl = color==='red' ? '#dc2626' : '#d97706';
+  return '<span style="background:'+bg+';color:'+cl+';font-size:11px;font-weight:700;padding:2px 8px;border-radius:20px;">'+label+'</span>';
+}
+
+function empty(cols, msg) {
+  return '<tr class="ov-empty"><td colspan="'+cols+'">'+(msg||'No data.')+'</td></tr>';
+}
+
+function loadDashboard() {
+  var records   = JSON.parse(localStorage.getItem('healthRecords'))   || [];
+  var inventory = JSON.parse(localStorage.getItem('nurseInventory'))  || [];
+  var dispensing= JSON.parse(localStorage.getItem('nurseDispensing')) || [];
+  var profiles  = JSON.parse(localStorage.getItem('nurseProfiles'))   || [];
+  var consults  = JSON.parse(localStorage.getItem('nurseConsults'))   || [];
+
+  var today  = new Date().toDateString();
+  var now    = new Date();
+  var in30   = new Date(now.getTime() + 30*86400000);
+
+  var pending  = consults.filter(function(c){ return c.status==='Pending'; });
+  var todayDis = dispensing.filter(function(d){ return new Date(d.time).toDateString()===today; });
+  var alerts   = inventory.filter(function(m){
+    var qty=parseInt(m.qty)||0, lowAt=parseInt(m.lowAt)||10, exp=m.exp?new Date(m.exp):null;
+    return qty<=lowAt || (exp&&exp<=in30);
+  });
+
+  document.getElementById('sc-records').textContent   = records.length;
+  document.getElementById('sc-consults').textContent  = pending.length;
+  document.getElementById('sc-medicines').textContent = inventory.length;
+  document.getElementById('sc-lowstock').textContent  = alerts.length;
+  document.getElementById('sc-dispensed').textContent = todayDis.length;
+  document.getElementById('sc-profiles').textContent  = profiles.length;
+
+  /* Recent Visits */
+  document.getElementById('tbl-records').innerHTML = records.length
+    ? records.slice(0,5).map(function(r){
+        return '<tr><td><strong>'+r.name+'</strong></td><td>'+mkBadge(r.type)+'</td>'
+             + '<td style="font-size:12px;">'+r.concern+'</td><td style="font-size:12px;">'+r.date+'</td></tr>';
+      }).join('')
+    : empty(4,'No health records yet.');
+
+  /* Pending Consultations */
+  document.getElementById('tbl-consults').innerHTML = pending.length
+    ? pending.slice(0,5).map(function(c){
+        return '<tr><td><strong>'+c.name+'</strong></td><td>'+mkBadge(c.type)+'</td>'
+             + '<td style="font-size:12px;">'+c.concern+'</td><td style="font-size:12px;">'+(c.date||'—')+'</td></tr>';
+      }).join('')
+    : empty(4,'No pending consultations.');
+
+  /* Low Stock / Expiring */
+  document.getElementById('tbl-stock').innerHTML = alerts.length
+    ? alerts.slice(0,5).map(function(m){
+        var qty=parseInt(m.qty)||0, lowAt=parseInt(m.lowAt)||10, exp=m.exp?new Date(m.exp):null;
+        var isExp=exp&&exp<now, isLow=qty<=lowAt;
+        var pill = isExp ? mkPill('Expired','red') : isLow ? mkPill('Low Stock','amber') : mkPill('Expiring Soon','amber');
+        return '<tr><td><strong>'+m.name+'</strong></td>'
+             + '<td style="font-weight:700;color:'+(isLow?'#ef4444':'#d97706')+';">'+qty+' '+(m.unit||'')+'</td>'
+             + '<td style="font-size:12px;">'+(m.exp||'—')+'</td><td>'+pill+'</td></tr>';
+      }).join('')
+    : empty(4,'✓ All medicines are OK.');
+
+  /* Dispensed Today */
+  document.getElementById('tbl-dispensed').innerHTML = todayDis.length
+    ? todayDis.slice(0,5).map(function(d){
+        return '<tr><td><strong>'+d.name+'</strong></td><td style="font-size:12px;">'+d.med+'</td>'
+             + '<td style="font-weight:700;">'+d.qty+'</td>'
+             + '<td style="font-size:11px;color:#6b7280;">'+new Date(d.time).toLocaleTimeString()+'</td></tr>';
+      }).join('')
+    : empty(4,'Nothing dispensed today.');
+}
+
+loadDashboard();
+setInterval(loadDashboard, 8000);
+window.addEventListener('storage', loadDashboard);
+</script>
+</body>
+</html>

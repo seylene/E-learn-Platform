@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Medicine Inventory Nurse</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="logo"> e-learn<small>Health Services Module</small></div>
+  <div class="menu">
+    <div class="menu-title">Profile</div>
+    <a href="nurse_profile.html">👤 My Profile</a>
+    <div class="menu-title">Health Services</div>
+    <a href="nurse_dashboard.html">📊 Dashboard</a>
+    <a href="nurse_records.html">📋 Health Records</a>
+    <a href="nurse_inventory.html" class="active">💊 Medicine Inventory</a>
+    <a href="nurse_dispensing.html">📦 Dispensing Log</a>
+    <a href="nurse_patient_profiles.html">🧑‍⚕️ Patient Profiles</a>
+    <a href="nurse_consultations.html">🗓 Consultations</a>
+  </div>
+</div>
+
+<div class="main">
+  <div class="header">
+    <div>
+      <h2>💊 Medicine Inventory</h2>
+      <div style="font-size:13px;color:#6b7280;">Stocks, quantity, and expiry monitoring</div>
+    </div>
+    <div class="header-right">
+      <div class="nurse-name" id="headerName">Ana Lopez</div>
+      <div class="nurse-role">School Nurse</div>
+      <button class="logout-btn" onclick="location.href='login.html'">Logout</button>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="page-title">Medicine Inventory</div>
+    <div class="page-sub">Monitor stocks, expiry dates, and low stock alerts</div>
+
+    <div class="card">
+      <div class="card-header">
+        <h3>💊 All Medicines</h3>
+        <button class="btn" onclick="openModal('invModal')">+ Add Medicine</button>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Medicine Name</th><th>Category</th><th>Quantity</th>
+            <th>Unit</th><th>Expiry Date</th><th>Status</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="invTable"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div id="invModal" class="modal">
+  <div class="modal-box">
+    <div class="modal-head"><h3>💊 Add / Edit Medicine</h3><p>Inventory stock entry</p></div>
+    <div class="modal-body">
+      <input type="hidden" id="inv-idx">
+      <div class="form-row col2">
+        <div class="form-group"><label>Medicine Name</label><input type="text" id="inv-name" placeholder="e.g. Paracetamol 500mg"></div>
+        <div class="form-group">
+          <label>Category</label>
+          <select id="inv-cat">
+            <option value="">Select</option>
+            <option>Analgesic / Antipyretic</option><option>Antibiotic</option>
+            <option>Antihistamine</option><option>Antacid</option>
+            <option>Vitamins / Supplements</option><option>Wound Care</option><option>Others</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row col3">
+        <div class="form-group"><label>Quantity</label><input type="number" id="inv-qty" placeholder="e.g. 100" min="0"></div>
+        <div class="form-group">
+          <label>Unit</label>
+          <select id="inv-unit"><option>Tablet</option><option>Capsule</option><option>Bottle</option><option>Sachet</option><option>Piece</option><option>Box</option></select>
+        </div>
+        <div class="form-group"><label>Low Stock Alert At</label><input type="number" id="inv-lowat" placeholder="e.g. 10" min="0"></div>
+      </div>
+      <div class="form-row col2">
+        <div class="form-group"><label>Expiry Date</label><input type="date" id="inv-exp"></div>
+        <div class="form-group"><label>Supplier / Source</label><input type="text" id="inv-sup" placeholder="e.g. DOH, School Budget"></div>
+      </div>
+      <div class="form-group"><label>Remarks</label><input type="text" id="inv-rem" placeholder="e.g. For external use only"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="saveItem()">Save Medicine</button>
+      <button class="btn outline" onclick="closeModal('invModal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var p = JSON.parse(localStorage.getItem('nurseProfile')) || {};
+  if (p.name) document.getElementById('headerName').textContent = p.name;
+})();
+
+function log(type, msg) {
+  var logs = JSON.parse(localStorage.getItem('nurseActivity')) || [];
+  logs.unshift({ type: type, msg: msg, time: new Date().toISOString() });
+  localStorage.setItem('nurseActivity', JSON.stringify(logs.slice(0, 50)));
+}
+
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+  document.querySelectorAll('#' + id + ' input, #' + id + ' select').forEach(function(el) {
+    if (el.type !== 'hidden') el.value = '';
+  });
+}
+document.querySelectorAll('.modal').forEach(function(m) {
+  m.addEventListener('click', function(e) { if (e.target === m) closeModal(m.id); });
+});
+
+function renderTable() {
+  var data = JSON.parse(localStorage.getItem('nurseInventory')) || [];
+  var tb   = document.getElementById('invTable');
+  if (!data.length) {
+    tb.innerHTML = '<tr class="empty-row"><td colspan="7">No medicines in inventory.</td></tr>'; return;
+  }
+  var now   = new Date();
+  var in30  = new Date(now.getTime() + 30 * 86400000);
+  tb.innerHTML = data.map(function(m, i) {
+    var qty   = parseInt(m.qty) || 0;
+    var lowAt = parseInt(m.lowAt) || 10;
+    var exp   = m.exp ? new Date(m.exp) : null;
+
+    var qClass = qty <= lowAt ? 'stock-low' : qty <= lowAt * 2 ? 'stock-mid' : 'stock-ok';
+    var eClass = !exp ? 'expiry-ok' : exp < now ? 'expiry-danger' : exp <= in30 ? 'expiry-near' : 'expiry-ok';
+    var eLabel = !exp ? '—' : exp < now ? '⚠️ EXPIRED' : exp <= in30 ? '⚠️ ' + m.exp : m.exp;
+    var status = qty <= 0         ? '<span class="badge red">Out of Stock</span>'
+               : qty <= lowAt     ? '<span class="badge amber">Low Stock</span>'
+               : exp && exp < now ? '<span class="badge red">Expired</span>'
+               : exp && exp <= in30? '<span class="badge amber">Expiring Soon</span>'
+               : '<span class="badge green">Good</span>';
+
+    return '<tr>'
+      + '<td><strong>' + m.name + '</strong>' + (m.rem ? '<br><span style="font-size:11px;color:#6b7280;">' + m.rem + '</span>' : '') + '</td>'
+      + '<td><span class="badge gray">' + (m.cat || '—') + '</span></td>'
+      + '<td class="' + qClass + '">' + qty + ' ' + (m.unit || '') + '</td>'
+      + '<td>' + (m.unit || '—') + '</td>'
+      + '<td class="' + eClass + '">' + eLabel + '</td>'
+      + '<td>' + status + '</td>'
+      + '<td><div class="btn-group">'
+      + '<button class="btn sm outline" onclick="editItem(' + i + ')">Edit</button>'
+      + '<button class="btn sm red" onclick="deleteItem(' + i + ')">Delete</button>'
+      + '</div></td></tr>';
+  }).join('');
+}
+
+function saveItem() {
+  var name = document.getElementById('inv-name').value.trim();
+  if (!name) { alert('Please enter medicine name.'); return; }
+  var data  = JSON.parse(localStorage.getItem('nurseInventory')) || [];
+  var idx   = document.getElementById('inv-idx').value;
+  var entry = {
+    name: name, cat:  document.getElementById('inv-cat').value,
+    qty:  document.getElementById('inv-qty').value,
+    unit: document.getElementById('inv-unit').value,
+    lowAt:document.getElementById('inv-lowat').value,
+    exp:  document.getElementById('inv-exp').value,
+    sup:  document.getElementById('inv-sup').value.trim(),
+    rem:  document.getElementById('inv-rem').value.trim()
+  };
+  if (idx === '') { data.push(entry); log('inventory', 'Added medicine: ' + name); }
+  else            { data[parseInt(idx)] = entry; log('inventory', 'Updated medicine: ' + name); }
+  localStorage.setItem('nurseInventory', JSON.stringify(data));
+  closeModal('invModal');
+  renderTable();
+}
+
+function editItem(i) {
+  var m = (JSON.parse(localStorage.getItem('nurseInventory')) || [])[i];
+  document.getElementById('inv-idx').value   = i;
+  document.getElementById('inv-name').value  = m.name;
+  document.getElementById('inv-cat').value   = m.cat   || '';
+  document.getElementById('inv-qty').value   = m.qty;
+  document.getElementById('inv-unit').value  = m.unit  || 'Tablet';
+  document.getElementById('inv-lowat').value = m.lowAt || '';
+  document.getElementById('inv-exp').value   = m.exp   || '';
+  document.getElementById('inv-sup').value   = m.sup   || '';
+  document.getElementById('inv-rem').value   = m.rem   || '';
+  openModal('invModal');
+}
+
+function deleteItem(i) {
+  if (!confirm('Delete this medicine from inventory?')) return;
+  var data = JSON.parse(localStorage.getItem('nurseInventory')) || [];
+  log('inventory', 'Deleted medicine: ' + data[i].name);
+  data.splice(i, 1);
+  localStorage.setItem('nurseInventory', JSON.stringify(data));
+  renderTable();
+}
+
+renderTable();
+</script>
+</body>
+</html>

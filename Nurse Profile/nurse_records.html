@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Health Records  Nurse</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="logo"> e-learn<small>Health Services Module</small></div>
+  <div class="menu">
+    <div class="menu-title">Profile</div>
+    <a href="nurse_profile.html">👤 My Profile</a>
+    <div class="menu-title">Health Services</div>
+    <a href="nurse_dashboard.html">📊 Dashboard</a>
+    <a href="nurse_records.html" class="active">📋 Health Records</a>
+    <a href="nurse_inventory.html">💊 Medicine Inventory</a>
+    <a href="nurse_dispensing.html">📦 Dispensing Log</a>
+    <a href="nurse_patient_profiles.html">🧑‍⚕️ Patient Profiles</a>
+    <a href="nurse_consultations.html">🗓 Consultations</a>
+  </div>
+</div>
+
+<div class="main">
+  <div class="header">
+    <div>
+      <h2>📋 Health Records</h2>
+      <div style="font-size:13px;color:#6b7280;">Visit logs for students, faculty, and staff</div>
+    </div>
+    <div class="header-right">
+      <div class="nurse-name" id="headerName">Ana Lopez</div>
+      <div class="nurse-role">School Nurse</div>
+      <button class="logout-btn" onclick="location.href='login.html'">Logout</button>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="page-title">Health Records</div>
+    <div class="page-sub">Add, edit, print visit records and medical clearances</div>
+
+    <div class="card">
+      <div class="card-header">
+        <button class="btn" onclick="openModal('recModal')">+ Record Visit</button>
+        <input class="search-input" placeholder="🔍 Search name..." oninput="renderTable(this.value)" style="margin:0;">
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th><th>Type</th><th>Concern</th>
+            <th>Diagnosis</th><th>Date</th><th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="recTable"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- RECORD VISIT MODAL -->
+<div id="recModal" class="modal">
+  <div class="modal-box">
+    <div class="modal-head"><h3>📋 Record Patient Visit</h3><p>Enter clinic visit details</p></div>
+    <div class="modal-body">
+      <input type="hidden" id="r-idx">
+      <div class="form-row col2">
+        <div class="form-group"><label>Full Name</label><input type="text" id="r-name" placeholder="e.g. Juan Dela Cruz"></div>
+        <div class="form-group">
+          <label>Type</label>
+          <select id="r-type"><option value="">Select</option><option>Student</option><option>Faculty</option><option>Staff</option></select>
+        </div>
+      </div>
+      <div class="form-row col2">
+        <div class="form-group"><label>ID / Employee No.</label><input type="text" id="r-id" placeholder="e.g. 2025-001"></div>
+        <div class="form-group"><label>Chief Complaint</label><input type="text" id="r-concern" placeholder="e.g. Headache, Fever"></div>
+      </div>
+      <div class="form-group"><label>Diagnosis / Assessment</label><input type="text" id="r-diag" placeholder="e.g. Common cold"></div>
+      <div class="form-group"><label>Vital Signs</label><input type="text" id="r-vitals" placeholder="e.g. BP: 120/80, Temp: 36.5°C, HR: 80bpm"></div>
+      <div class="form-group"><label>Treatment / Medicine Given</label><input type="text" id="r-treat" placeholder="e.g. Paracetamol 500mg, rest advised"></div>
+      <div class="form-group"><label>Notes / Remarks</label><textarea id="r-notes" placeholder="Additional notes..."></textarea></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="saveRecord()">Save Record</button>
+      <button class="btn outline" onclick="closeModal('recModal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- PRINT — MEDICAL RECORD MODAL -->
+<div id="printModal" class="modal">
+  <div class="modal-box wide">
+    <div class="modal-head"><h3>🖨 Medical Record</h3><p>Review before printing</p></div>
+    <div class="modal-body" id="printBody"></div>
+    <div class="modal-foot">
+      <button class="btn" onclick="window.print()">🖨 Print</button>
+      <button class="btn outline" onclick="closeModal('printModal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<!-- PRINT — MEDICAL CLEARANCE MODAL -->
+<div id="clearanceModal" class="modal">
+  <div class="modal-box wide">
+    <div class="modal-head">
+      <h3>📄 Medical Clearance</h3>
+      <p>Review before printing</p>
+    </div>
+    <div class="modal-body" id="clearanceBody"></div>
+    <div class="modal-foot">
+      <button class="btn" onclick="window.print()">🖨 Print Clearance</button>
+      <button class="btn outline" onclick="closeModal('clearanceModal')">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var p = JSON.parse(localStorage.getItem('nurseProfile')) || {};
+  if (p.name) document.getElementById('headerName').textContent = p.name;
+})();
+
+function log(type, msg) {
+  var logs = JSON.parse(localStorage.getItem('nurseActivity')) || [];
+  logs.unshift({ type: type, msg: msg, time: new Date().toISOString() });
+  localStorage.setItem('nurseActivity', JSON.stringify(logs.slice(0, 50)));
+}
+
+function badge(t) {
+  return t==='Student'?'teal' : t==='Faculty'?'blue' : t==='Staff'?'amber' : 'gray';
+}
+
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+  document.querySelectorAll('#'+id+' input, #'+id+' textarea, #'+id+' select').forEach(function(el){
+    if (el.type!=='hidden') el.value='';
+  });
+}
+document.querySelectorAll('.modal').forEach(function(m){
+  m.addEventListener('click', function(e){ if(e.target===m) closeModal(m.id); });
+});
+
+/* ---- RENDER TABLE ---- */
+function renderTable(filter) {
+  var data = JSON.parse(localStorage.getItem('healthRecords')) || [];
+  if (filter) data = data.filter(function(r){ return r.name.toLowerCase().includes(filter.toLowerCase()); });
+  var tb = document.getElementById('recTable');
+  if (!data.length) { tb.innerHTML = '<tr class="empty-row"><td colspan="6">No health records yet.</td></tr>'; return; }
+  tb.innerHTML = data.map(function(r, i) {
+    return '<tr>'
+      + '<td><strong>'+r.name+'</strong><br><span style="font-size:11px;color:#6b7280;">'+(r.empid||'')+'</span></td>'
+      + '<td><span class="badge '+badge(r.type)+'">'+(r.type||'—')+'</span></td>'
+      + '<td>'+r.concern+'</td>'
+      + '<td style="font-size:12px;max-width:150px;">'+(r.diag||'—')+'</td>'
+      + '<td style="font-size:12px;">'+r.date+'</td>'
+      + '<td><div class="btn-group">'
+      + '<button class="btn sm" onclick="printRecord('+i+')">🖨 Record</button>'
+      + '<button class="btn sm" style="background:#7c3aed;" onclick="printClearance('+i+')">📄 Clearance</button>'
+      + '<button class="btn sm outline" onclick="editRecord('+i+')">Edit</button>'
+      + '<button class="btn sm red" onclick="deleteRecord('+i+')">Delete</button>'
+      + '</div></td></tr>';
+  }).join('');
+}
+
+/* ---- SAVE ---- */
+function saveRecord() {
+  var name    = document.getElementById('r-name').value.trim();
+  var concern = document.getElementById('r-concern').value.trim();
+  if (!name || !concern) { alert('Please fill in Name and Concern.'); return; }
+  var data = JSON.parse(localStorage.getItem('healthRecords')) || [];
+  var idx  = document.getElementById('r-idx').value;
+  var entry = {
+    name: name, type: document.getElementById('r-type').value,
+    empid: document.getElementById('r-id').value.trim(), concern: concern,
+    diag:   document.getElementById('r-diag').value.trim(),
+    vitals: document.getElementById('r-vitals').value.trim(),
+    treat:  document.getElementById('r-treat').value.trim(),
+    notes:  document.getElementById('r-notes').value.trim(),
+    date: new Date().toLocaleDateString(), time: new Date().toISOString()
+  };
+  if (idx==='') { data.unshift(entry); log('record','Recorded visit: '+name+' ('+entry.type+') — '+concern); }
+  else          { data[parseInt(idx)]=entry; log('record','Updated record: '+name); }
+  localStorage.setItem('healthRecords', JSON.stringify(data));
+  closeModal('recModal');
+  renderTable();
+}
+
+/* ---- EDIT ---- */
+function editRecord(i) {
+  var r = (JSON.parse(localStorage.getItem('healthRecords'))||[])[i];
+  document.getElementById('r-idx').value     = i;
+  document.getElementById('r-name').value    = r.name;
+  document.getElementById('r-type').value    = r.type    || '';
+  document.getElementById('r-id').value      = r.empid   || '';
+  document.getElementById('r-concern').value = r.concern;
+  document.getElementById('r-diag').value    = r.diag    || '';
+  document.getElementById('r-vitals').value  = r.vitals  || '';
+  document.getElementById('r-treat').value   = r.treat   || '';
+  document.getElementById('r-notes').value   = r.notes   || '';
+  openModal('recModal');
+}
+
+/* ---- DELETE ---- */
+function deleteRecord(i) {
+  if (!confirm('Delete this health record?')) return;
+  var data = JSON.parse(localStorage.getItem('healthRecords')) || [];
+  log('record','Deleted record: '+data[i].name);
+  data.splice(i,1);
+  localStorage.setItem('healthRecords', JSON.stringify(data));
+  renderTable();
+}
+
+/* ---- HELPERS ---- */
+function field(lbl, val) {
+  return '<div style="padding:5px 0;">'
+       + '<div style="font-size:10px;font-weight:700;text-transform:uppercase;color:#9ca3af;">'+lbl+'</div>'
+       + '<div style="font-size:13px;font-weight:500;color:#1e293b;margin-top:2px;">'+(val||'—')+'</div></div>';
+}
+function section(title, val) {
+  return '<div style="margin-bottom:10px;">'
+       + '<div style="font-size:11px;font-weight:800;text-transform:uppercase;color:#0f6b5e;letter-spacing:1px;">'+title+'</div>'
+       + '<div style="margin-top:4px;padding:9px;background:#f9fafb;border-radius:6px;font-size:13px;">'+(val||'—')+'</div></div>';
+}
+
+/* ---- PRINT MEDICAL RECORD ---- */
+function printRecord(i) {
+  var data  = JSON.parse(localStorage.getItem('healthRecords')) || [];
+  var profs = JSON.parse(localStorage.getItem('nurseProfiles')) || [];
+  var nurse = JSON.parse(localStorage.getItem('nurseProfile'))  || { name:'Ana Lopez' };
+  var r     = data[i];
+  var prof  = profs.find(function(x){ return x.name.toLowerCase()===r.name.toLowerCase(); }) || {};
+
+  document.getElementById('printBody').innerHTML =
+    '<div style="font-family:Arial;padding:10px;">'
+  + '<div style="text-align:center;margin-bottom:16px;">'
+  + '<div style="font-size:19px;font-weight:800;color:#0f6b5e;">DAOS — Health Services</div>'
+  + '<div style="font-size:12px;color:#6b7280;">Medical Record / Clinic Visit Report</div></div>'
+  + '<hr style="border-color:#e5e7eb;margin-bottom:14px;">'
+  + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px;">'
+  + field('Patient Name',r.name)+field('ID / Emp. No.',r.empid)
+  + field('Type',r.type)+field('Date of Visit',r.date)
+  + field('Blood Type',prof.blood||'—')+field('Known Allergies',prof.allergy||'—')
+  + '</div>'
+  + section('Chief Complaint',r.concern)
+  + section('Diagnosis / Assessment',r.diag)
+  + section('Vital Signs',r.vitals)
+  + section('Treatment / Medicine Given',r.treat)
+  + section('Notes / Remarks',r.notes)
+  + '<hr style="border-color:#e5e7eb;margin:14px 0;">'
+  + '<div style="display:flex;justify-content:space-between;font-size:12px;color:#6b7280;">'
+  + '<span>Attended by: <strong style="color:#0f6b5e;">'+nurse.name+'</strong></span>'
+  + '<span>Printed: '+new Date().toLocaleString()+'</span></div></div>';
+
+  openModal('printModal');
+}
+
+/* ---- PRINT MEDICAL CLEARANCE ---- */
+function printClearance(i) {
+  var data  = JSON.parse(localStorage.getItem('healthRecords')) || [];
+  var profs = JSON.parse(localStorage.getItem('nurseProfiles')) || [];
+  var nurse = JSON.parse(localStorage.getItem('nurseProfile'))  || { name:'Ana Lopez', license:'RN-00000', dept:'Health Services', office:'Main Building – Clinic Room' };
+  var r     = data[i];
+  var prof  = profs.find(function(x){ return x.name.toLowerCase()===r.name.toLowerCase(); }) || {};
+
+  document.getElementById('clearanceBody').innerHTML =
+    '<div style="font-family:Arial;padding:14px;max-width:680px;margin:0 auto;">'
+
+  /* Header */
+  + '<div style="text-align:center;margin-bottom:20px;">'
+  + '<div style="font-size:20px;font-weight:900;color:#0f6b5e;letter-spacing:-0.5px;">DAOS — Health Services</div>'
+  + '<div style="font-size:13px;color:#6b7280;margin-top:2px;">'+(nurse.office||'School Clinic')+'</div>'
+  + '<div style="font-size:22px;font-weight:800;color:#1e293b;margin:14px 0 2px;text-transform:uppercase;letter-spacing:1px;">Medical Clearance</div>'
+  + '<div style="width:60px;height:3px;background:#0f6b5e;margin:6px auto 0;border-radius:2px;"></div>'
+  + '</div>'
+
+  /* Patient Info box */
+  + '<div style="border:1.5px solid #e5e7eb;border-radius:8px;padding:14px 18px;margin-bottom:18px;">'
+  + '<div style="font-size:10px;font-weight:800;text-transform:uppercase;color:#0f6b5e;letter-spacing:1px;margin-bottom:10px;">Patient Information</div>'
+  + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">'
+  + field('Full Name', r.name)
+  + field('ID / Employee No.', r.empid||'—')
+  + field('Type', r.type||'—')
+  + field('Blood Type', prof.blood||'—')
+  + field('Age', prof.age ? prof.age+' years old' : '—')
+  + field('Gender', prof.gender||'—')
+  + field('Date Examined', r.date)
+  + field('Known Allergies', prof.allergy||'None')
+  + '</div></div>'
+
+  /* Clearance statement */
+  + '<div style="border:1.5px solid #a7f3d0;border-radius:8px;padding:16px 18px;background:#f0fdf9;margin-bottom:18px;">'
+  + '<div style="font-size:10px;font-weight:800;text-transform:uppercase;color:#0f6b5e;letter-spacing:1px;margin-bottom:8px;">Clearance Statement</div>'
+  + '<p style="font-size:13px;color:#1e293b;line-height:1.7;">'
+  + 'This is to certify that <strong>'+r.name+'</strong>, a '+( r.type||'student/employee')+' of this institution, '
+  + 'was examined by the school health clinic on <strong>'+r.date+'</strong>. '
+  + 'Based on the physical examination and health assessment conducted, '
+  + 'the above-named individual is found to be <strong style="color:#0f6b5e;">physically fit</strong> and is '
+  + '<strong style="color:#0f6b5e;">hereby cleared</strong> to participate in school/work activities.'
+  + '</p></div>'
+
+  /* Clinical findings */
+  + '<div style="border:1.5px solid #e5e7eb;border-radius:8px;padding:14px 18px;margin-bottom:18px;">'
+  + '<div style="font-size:10px;font-weight:800;text-transform:uppercase;color:#0f6b5e;letter-spacing:1px;margin-bottom:10px;">Clinical Findings</div>'
+  + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">'
+  + field('Vital Signs', r.vitals||'—')
+  + field('Diagnosis / Assessment', r.diag||'Fit for school/work activities')
+  + '</div>'
+  + (r.treat ? '<div style="margin-top:8px;">'+field('Treatment / Advice', r.treat)+'</div>' : '')
+  + (r.notes ? '<div style="margin-top:8px;">'+field('Remarks', r.notes)+'</div>' : '')
+  + '</div>'
+
+  /* Signature area */
+  + '<div style="display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-top:24px;">'
+  + '<div style="text-align:center;">'
+  + '<div style="border-top:1.5px solid #374151;padding-top:8px;margin-top:40px;">'
+  + '<div style="font-size:13px;font-weight:700;color:#1e293b;">'+nurse.name+'</div>'
+  + '<div style="font-size:11px;color:#6b7280;">School Nurse &nbsp;|&nbsp; '+(nurse.license||'RN-00000')+'</div>'
+  + '<div style="font-size:11px;color:#6b7280;">'+(nurse.dept||'Health Services')+'</div>'
+  + '</div></div>'
+  + '<div style="text-align:center;">'
+  + '<div style="border-top:1.5px solid #374151;padding-top:8px;margin-top:40px;">'
+  + '<div style="font-size:13px;font-weight:700;color:#1e293b;">Noted by: ___________________</div>'
+  + '<div style="font-size:11px;color:#6b7280;">School Administrator / Principal</div>'
+  + '</div></div>'
+  + '</div>'
+
+  /* Footer */
+  + '<div style="text-align:center;margin-top:20px;font-size:11px;color:#9ca3af;border-top:1px solid #f0f0f0;padding-top:10px;">'
+  + 'Issued: '+new Date().toLocaleString()+' &nbsp;·&nbsp; DAOS Health Services Module'
+  + '</div>'
+  + '</div>';
+
+  openModal('clearanceModal');
+}
+
+renderTable();
+</script>
+</body>
+</html>

@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Dispensing Log  Nurse</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="sidebar">
+  <div class="logo"> e-learn<small>Health Services Module</small></div>
+  <div class="menu">
+    <div class="menu-title">Profile</div>
+    <a href="nurse_profile.html">👤 My Profile</a>
+    <div class="menu-title">Health Services</div>
+    <a href="nurse_dashboard.html">📊 Dashboard</a>
+    <a href="nurse_records.html">📋 Health Records</a>
+    <a href="nurse_inventory.html">💊 Medicine Inventory</a>
+    <a href="nurse_dispensing.html" class="active">📦 Dispensing Log</a>
+    <a href="nurse_patient_profiles.html">🧑‍⚕️ Patient Profiles</a>
+    <a href="nurse_consultations.html">🗓 Consultations</a>
+  </div>
+</div>
+
+<div class="main">
+  <div class="header">
+    <div>
+      <h2>📦 Dispensing Log</h2>
+      <div style="font-size:13px;color:#6b7280;">Medicine dispensing records — auto-deducts from inventory</div>
+    </div>
+    <div class="header-right">
+      <div class="nurse-name" id="headerName">Janine Doe</div>
+      <div class="nurse-role">School Nurse</div>
+      <button class="logout-btn" onclick="location.href='login.html'">Logout</button>
+    </div>
+  </div>
+
+  <div class="content">
+    <div class="page-title">Dispensing Log</div>
+    <div class="page-sub">Every medicine dispensed is logged and deducted from inventory automatically</div>
+
+    <div class="card">
+      <div class="card-header">
+        <h3>📦 Dispensing Records</h3>
+        <button class="btn" onclick="openDispense()">+ Dispense Medicine</button>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Recipient</th><th>Type</th><th>Medicine</th>
+            <th>Qty Given</th><th>Reason</th><th>Dispensed By</th><th>Date &amp; Time</th>
+          </tr>
+        </thead>
+        <tbody id="disTable"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- DISPENSE MODAL -->
+<div id="disModal" class="modal">
+  <div class="modal-box">
+    <div class="modal-head"><h3>📦 Dispense Medicine</h3><p>Log medicine given to a patient</p></div>
+    <div class="modal-body">
+      <div class="form-row col2">
+        <div class="form-group"><label>Recipient Name</label><input type="text" id="d-name" placeholder="Full name"></div>
+        <div class="form-group">
+          <label>Type</label>
+          <select id="d-type"><option value="">Select</option><option>Student</option><option>Faculty</option><option>Staff</option></select>
+        </div>
+      </div>
+      <div class="form-row col2">
+        <div class="form-group">
+          <label>Medicine</label>
+          <select id="d-med"><option value="">Select medicine...</option></select>
+        </div>
+        <div class="form-group"><label>Quantity to Dispense</label><input type="number" id="d-qty" placeholder="e.g. 2" min="1"></div>
+      </div>
+      <div class="form-group"><label>Reason / Complaint</label><input type="text" id="d-reason" placeholder="e.g. Headache, Fever"></div>
+      <div class="form-group"><label>Dispensed By</label><input type="text" id="d-by" placeholder="Nurse name"></div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn" onclick="saveDispense()">Confirm Dispense</button>
+      <button class="btn outline" onclick="closeModal('disModal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var p = JSON.parse(localStorage.getItem('nurseProfile')) || {};
+  if (p.name) document.getElementById('headerName').textContent = p.name;
+})();
+
+function log(type, msg) {
+  var logs = JSON.parse(localStorage.getItem('nurseActivity')) || [];
+  logs.unshift({ type: type, msg: msg, time: new Date().toISOString() });
+  localStorage.setItem('nurseActivity', JSON.stringify(logs.slice(0, 50)));
+}
+
+function badge(t) {
+  return t === 'Student' ? 'teal' : t === 'Faculty' ? 'blue' : t === 'Staff' ? 'amber' : 'gray';
+}
+
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) {
+  document.getElementById(id).classList.remove('open');
+  document.querySelectorAll('#' + id + ' input, #' + id + ' select').forEach(function(el) {
+    if (el.type !== 'hidden') el.value = '';
+  });
+}
+document.querySelectorAll('.modal').forEach(function(m) {
+  m.addEventListener('click', function(e) { if (e.target === m) closeModal(m.id); });
+});
+
+/* Open dispense — fill medicine dropdown & nurse name */
+function openDispense() {
+  var inv = JSON.parse(localStorage.getItem('nurseInventory')) || [];
+  var sel = document.getElementById('d-med');
+  sel.innerHTML = '<option value="">Select medicine...</option>';
+  inv.forEach(function(m) {
+    var o = document.createElement('option');
+    o.value = m.name;
+    o.textContent = m.name + ' (' + m.qty + ' ' + m.unit + ' remaining)';
+    sel.appendChild(o);
+  });
+  var p = JSON.parse(localStorage.getItem('nurseProfile')) || {};
+  var byEl = document.getElementById('d-by');
+  if (!byEl.value) byEl.value = p.name || 'Ana Lopez';
+  openModal('disModal');
+}
+
+function renderTable() {
+  var data = JSON.parse(localStorage.getItem('nurseDispensing')) || [];
+  var tb   = document.getElementById('disTable');
+  if (!data.length) {
+    tb.innerHTML = '<tr class="empty-row"><td colspan="7">No dispensing records yet.</td></tr>'; return;
+  }
+  tb.innerHTML = data.map(function(d) {
+    return '<tr>'
+      + '<td><strong>' + d.name + '</strong></td>'
+      + '<td><span class="badge ' + badge(d.type) + '">' + (d.type || '—') + '</span></td>'
+      + '<td>' + d.med + '</td>'
+      + '<td style="font-weight:700;">' + d.qty + '</td>'
+      + '<td style="font-size:12px;">' + (d.reason || '—') + '</td>'
+      + '<td style="font-size:12px;">' + (d.by || '—') + '</td>'
+      + '<td style="font-size:12px;">' + new Date(d.time).toLocaleString() + '</td>'
+      + '</tr>';
+  }).join('');
+}
+
+function saveDispense() {
+  var name = document.getElementById('d-name').value.trim();
+  var med  = document.getElementById('d-med').value;
+  var qty  = parseInt(document.getElementById('d-qty').value) || 0;
+  if (!name || !med || qty < 1) { alert('Please complete all fields.'); return; }
+
+  /* Deduct from inventory */
+  var inv = JSON.parse(localStorage.getItem('nurseInventory')) || [];
+  var ok  = false;
+  inv = inv.map(function(m) {
+    if (m.name === med) {
+      ok = true;
+      var newQty = (parseInt(m.qty) || 0) - qty;
+      if (newQty < 0) { alert('Not enough stock! Available: ' + m.qty + ' ' + m.unit); throw 'stop'; }
+      m.qty = newQty;
+    }
+    return m;
+  });
+  if (!ok) { alert('Medicine not found in inventory.'); return; }
+  localStorage.setItem('nurseInventory', JSON.stringify(inv));
+
+  var data = JSON.parse(localStorage.getItem('nurseDispensing')) || [];
+  data.unshift({
+    name:   name,
+    type:   document.getElementById('d-type').value,
+    med:    med,
+    qty:    qty,
+    reason: document.getElementById('d-reason').value.trim(),
+    by:     document.getElementById('d-by').value.trim(),
+    time:   new Date().toISOString()
+  });
+  localStorage.setItem('nurseDispensing', JSON.stringify(data));
+  log('dispense', 'Dispensed ' + qty + 'x ' + med + ' → ' + name);
+  closeModal('disModal');
+  renderTable();
+}
+
+renderTable();
+</script>
+</body>
+</html>
